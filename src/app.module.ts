@@ -1,10 +1,29 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { HallModule } from './hall/hall.module';
+import { UserModule } from './user/user.module';
+import { AdminModule } from './admin/admin.module';
+import { PeakHoursModule } from './peak-hours/peak-hours.module';
+import { BookingsModule } from './bookings/bookings.module';
+import { CancelModule } from './cancel/cancel.module';
+import { ChargesModule } from './charges/charges.module';
+import { HallBlockModule } from './hall-block/hall-block.module';
+import { DefaultValuesModule } from './default-values/default-values.module';
+import { BillingModule } from './billing/billing.module';
+import { ExpenseModule } from './expense/expense.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    HallModule,
+    UserModule,
+    AdminModule,
+    PeakHoursModule,
+    BookingsModule,
+    CancelModule,
+    ChargesModule,
+    HallBlockModule,
+    DefaultValuesModule,
+    BillingModule,
+    ExpenseModule
+  ],
 })
 export class AppModule {}
