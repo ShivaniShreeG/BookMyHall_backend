@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root:shivani@localhost:3306/marriage_hall_booking"
+}
+
+enum Role {
+  admin
+  administrator
+}
+
+enum Status {
+  booked
+  cancelled
+}
+
+model Hall {
+  hall_id    Int      @id @default(autoincrement())
+  name       String
+  phone      String
+  email      String
+  address    String
+  logo       Bytes?
+  created_at DateTime @default(now())
+
+  users         User[]
+  admins        Admin[]
+  peakHours     Peak_hours[]
+  bookings      Bookings[]
+  cancels       Cancel[]
+  charges       Charges[]
+  hallBlocks    Hall_block[]
+  defaults      Default_values[]
+  billings      Billing[]
+  expenses      Expense[]
+  administrator Administrator[]
+
+  @@unique([name, address])
+}
+
+model User {
+  user_id   Int
+  hall_id   Int
+  role      Role    @default(admin)
+  password  String
+  is_active Boolean @default(true)
+
+  hall          Hall             @relation(fields: [hall_id], references: [hall_id])
+  admins        Admin[]
+  administrator Administrator[]
+  peaks         Peak_hours[]
+  bookings      Bookings[]
+  cancels       Cancel[]
+  defaults      Default_values[]
+  billings      Billing[]
+
+  @@unique([hall_id, user_id])
+}
+
+model Admin {
+  id          Int    @id @default(autoincrement())
+  hall_id     Int
+  user_id     Int
+  name        String
+  designation String
+  phone       String
+  email       String
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+  user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+
+  @@unique([hall_id, user_id])
+}
+
+model Administrator {
+  id      Int    @id @default(autoincrement())
+  user_id Int
+  hall_id Int
+  name    String
+  phone   String
+  email   String
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+  user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+
+  @@unique([hall_id, user_id])
+}
+
+model Peak_hours {
+  id         Int       @id @default(autoincrement())
+  hall_id    Int
+  user_id    Int
+  date       DateTime
+  reason     String
+  rent       Float
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+  user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+
+  @@unique([hall_id, date])
+}
+
+model Bookings {
+  booking_id            Int
+  hall_id               Int
+  user_id               Int
+  function_date         DateTime
+  alloted_datetime_from DateTime
+  alloted_datetime_to   DateTime
+  phone                 String
+  name                  String
+  address               String
+  alternate_phone       String?
+  status                Status   @default(booked)
+  rent                  Float
+  advance               Float
+  balance               Float
+
+  hall     Hall      @relation(fields: [hall_id], references: [hall_id])
+  user     User      @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+  cancels  Cancel[]
+  charges  Charges[]
+  billings Billing[]
+
+  @@id([hall_id, booking_id])
+}
+
+model Cancel {
+  id            Int      @id @default(autoincrement())
+  hall_id       Int
+  user_id       Int
+  booking_id    Int
+  reason        String
+  advance_paid  Float
+  cancel_charge Float
+  refund        Float
+  created_at    DateTime @default(now())
+
+  hall    Hall     @relation(fields: [hall_id], references: [hall_id])
+  user    User     @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+  booking Bookings @relation(fields: [hall_id, booking_id], references: [hall_id, booking_id])
+
+  @@unique([hall_id, booking_id])
+}
+
+model Charges {
+  id         Int    @id @default(autoincrement())
+  hall_id    Int
+  booking_id Int
+  reason     String
+  amount     Float
+
+  hall    Hall     @relation(fields: [hall_id], references: [hall_id])
+  booking Bookings @relation(fields: [hall_id, booking_id], references: [hall_id, booking_id])
+}
+
+model Hall_block {
+  id      Int    @id @default(autoincrement())
+  hall_id Int
+  reason  String
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+
+  @@unique([hall_id])
+}
+
+model Default_values {
+  id         Int       @id @default(autoincrement())
+  hall_id    Int
+  user_id    Int
+  reason     String
+  amount     Float
+  created_at DateTime  @default(now()) // automatically set on insert
+  updated_at DateTime? @updatedAt // automatically updated on update, can be empty on insert
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+  user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+}
+
+model Billing {
+  id         Int       @id @default(autoincrement())
+  hall_id    Int
+  user_id    Int
+  booking_id Int
+  reason     String
+  total      Float
+  updated_at DateTime? @updatedAt
+
+  hall    Hall     @relation(fields: [hall_id], references: [hall_id])
+  user    User     @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+  booking Bookings @relation(fields: [hall_id, booking_id], references: [hall_id, booking_id])
+}
+
+model Expense {
+  id         Int      @id @default(autoincrement())
+  hall_id    Int
+  reason     String
+  amount     Float
+  created_at DateTime @default(now())
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+}
