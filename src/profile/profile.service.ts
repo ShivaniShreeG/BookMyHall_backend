@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { UpdateProfileDto } from './dto/update-profile.dto'; 
 
 const prisma = new PrismaClient();
 
@@ -76,6 +77,64 @@ export class ProfileService {
       });
     }
   }
+  async updateProfile(role: 'admin' | 'administrator', hallId: number, userId: number, dto: UpdateProfileDto) {
+  if (role === 'admin') {
+    const existing = await prisma.admin.findUnique({
+      where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+    });
+
+    if (existing) {
+      const updated = await prisma.admin.update({
+        where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+        data: {
+          name: dto.name ?? existing.name,
+          phone: dto.phone ?? existing.phone,
+          email: dto.email ?? existing.email,
+          // designation is NOT updated
+        },
+      });
+      return this.getProfile(role, hallId, userId);
+    } else {
+      await prisma.admin.create({
+        data: {
+          hall_id: hallId,
+          user_id: userId,
+          name: dto.name ?? '',
+          phone: dto.phone ?? '',
+          email: dto.email ?? '',
+          designation: '', // set default or keep empty
+        },
+      });
+      return this.getProfile(role, hallId, userId);
+    }
+  } else {
+    const existing = await prisma.administrator.findUnique({
+      where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+    });
+
+    if (existing) {
+      await prisma.administrator.update({
+        where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+        data: {
+          name: dto.name ?? existing.name,
+          phone: dto.phone ?? existing.phone,
+          email: dto.email ?? existing.email,
+        },
+      });
+    } else {
+      await prisma.administrator.create({
+        data: {
+          hall_id: hallId,
+          user_id: userId,
+          name: dto.name ?? '',
+          phone: dto.phone ?? '',
+          email: dto.email ?? '',
+        },
+      });
+    }
+    return this.getProfile(role, hallId, userId);
+  }
+}
 
   // Public methods
   getAdminProfile(hallId: number, userId: number) {
