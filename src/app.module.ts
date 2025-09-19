@@ -10,6 +10,7 @@ import { HallBlockModule } from './hall-block/hall-block.module';
 import { DefaultValuesModule } from './default-values/default-values.module';
 import { BillingModule } from './billing/billing.module';
 import { ExpenseModule } from './expense/expense.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { ExpenseModule } from './expense/expense.module';
     HallBlockModule,
     DefaultValuesModule,
     BillingModule,
-    ExpenseModule
+    ExpenseModule,
+    ProfileModule
   ],
 })
 export class AppModule {}

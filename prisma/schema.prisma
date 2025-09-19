@@ -25,6 +25,7 @@ model Hall {
   address    String
   logo       Bytes?
   created_at DateTime @default(now())
+  is_active  Boolean  @default(true)
 
   users         User[]
   admins        Admin[]

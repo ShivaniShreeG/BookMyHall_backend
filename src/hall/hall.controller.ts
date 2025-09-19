@@ -1,5 +1,6 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Post, Body, Delete } from '@nestjs/common';
 import { HallService } from './hall.service';
+import { CreateHallDto } from './dto/create-hall.dto';
 
 @Controller('halls')
 export class HallController {
@@ -13,5 +14,17 @@ export class HallController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.hallService.findOne(id);
+  }
+
+  // ✅ Create hall
+  @Post()
+  create(@Body() createHallDto: CreateHallDto) {
+    return this.hallService.createHall(createHallDto);
+  }
+
+  // ✅ Delete hall
+  @Delete(':id')
+  delete(@Param('id', ParseIntPipe) id: number) {
+    return this.hallService.deleteHall(id);
   }
 }

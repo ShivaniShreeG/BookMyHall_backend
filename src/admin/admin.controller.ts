@@ -1,7 +1,7 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
-@Controller('profile')
+@Controller('details')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
