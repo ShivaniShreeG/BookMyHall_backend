@@ -11,6 +11,9 @@ import { DefaultValuesModule } from './default-values/default-values.module';
 import { BillingModule } from './billing/billing.module';
 import { ExpenseModule } from './expense/expense.module';
 import { ProfileModule } from './profile/profile.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -25,7 +28,10 @@ import { ProfileModule } from './profile/profile.module';
     DefaultValuesModule,
     BillingModule,
     ExpenseModule,
-    ProfileModule
+    ProfileModule,
+    DashboardModule
   ],
+  controllers:[AppController],
+  providers:[AppService],
 })
 export class AppModule {}

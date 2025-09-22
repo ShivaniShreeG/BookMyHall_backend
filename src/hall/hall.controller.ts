@@ -2,6 +2,7 @@ import { Controller, Get, Param, ParseIntPipe, Post, Body, Delete, Patch, Query 
 import { HallService } from './hall.service';
 import { CreateHallDto } from './dto/create-hall.dto';
 import { UpdateHallDto } from './dto/update-hall.dto';
+import { BlockHallDto } from './dto/block-hall.dto';
 
 @Controller('halls')
 export class HallController {
@@ -36,13 +37,13 @@ export class HallController {
 
   // Block/Unblock hall
   @Patch(':id/block')
-  block(
-    @Param('id', ParseIntPipe) id: number,
-    @Query('block') block: string, // ?block=true or false
-  ) {
-    const isBlock = block === 'true';
-    return this.hallService.blockHall(id, isBlock);
-  }
+block(
+  @Param('id', ParseIntPipe) id: number,
+  @Body() blockHallDto: BlockHallDto, // <- now receives body
+) {
+  const { block, reason } = blockHallDto;
+  return this.hallService.blockHall(id, block, reason);
+}
 
   // Delete hall
   @Delete(':id')

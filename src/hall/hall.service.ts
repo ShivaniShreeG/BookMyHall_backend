@@ -42,24 +42,29 @@ export class HallService {
   }
 
   // Get single hall by id
-  async findOne(id: number) {
-    const hall = await prisma.hall.findUnique({
-      where: { hall_id: id },
-      select: {
-        hall_id: true,
-        name: true,
-        phone: true,
-        email: true,
-        address: true,
-        logo: true,
-        is_active: true,
-      },
-    });
+  // Get single hall by id, including block reasons
+async findOne(id: number) {
+  const hall = await prisma.hall.findUnique({
+    where: { hall_id: id },
+    include: {
+      hallBlocks: { select: { reason: true } }, // fetch block reasons
+    },
+  });
 
-    if (!hall) throw new NotFoundException(`Hall with ID ${id} not found`);
+  if (!hall) throw new NotFoundException(`Hall with ID ${id} not found`);
 
-    return this.toBase64(hall);
-  }
+  // Convert logo to base64
+  const hallWithBase64 = this.toBase64(hall);
+
+  // Map block reasons into an array
+  const blockReasons = hall.hallBlocks.map(b => b.reason);
+
+  return {
+    ...hallWithBase64,
+    block_reasons: blockReasons, // add block reasons
+  };
+}
+
 
   // Create hall
   async createHall(createHallDto: CreateHallDto) {
@@ -104,23 +109,56 @@ export class HallService {
     return this.toBase64(updatedHall);
   }
 
-  // Block/Unblock hall
-  async blockHall(id: number, block: boolean) {
-    const hall = await prisma.hall.findUnique({ where: { hall_id: id } });
-    if (!hall) throw new NotFoundException(`Hall with ID ${id} not found`);
 
-    const updatedHall = await prisma.hall.update({
-      where: { hall_id: id },
-      data: {
-        is_active: !block ? true : false,
-      },
+  // Block/Unblock hall
+async blockHall(id: number, block: boolean, reason?: string) {
+  const hall = await prisma.hall.findUnique({ where: { hall_id: id } });
+  if (!hall) throw new NotFoundException(`Hall with ID ${id} not found`);
+
+  if (block) {
+    if (!reason) throw new BadRequestException('Block reason is required');
+
+    // Update hall to inactive and insert into hall_block
+    const updatedHall = await prisma.$transaction(async (prisma) => {
+      const hallBlock = await prisma.hall_block.create({
+        data: {
+          hall_id: id,
+          reason,
+        },
+      });
+
+      const hallUpdate = await prisma.hall.update({
+        where: { hall_id: id },
+        data: { is_active: false },
+      });
+
+      return hallUpdate;
     });
 
     return {
-      message: `Hall has been ${block ? 'blocked' : 'unblocked'} successfully`,
+      message: `Hall has been blocked successfully`,
+      hall: this.toBase64(updatedHall),
+    };
+  } else {
+    // Unblock: set active and remove from hall_block
+    const updatedHall = await prisma.$transaction(async (prisma) => {
+      await prisma.hall_block.deleteMany({ where: { hall_id: id } });
+
+      const hallUpdate = await prisma.hall.update({
+        where: { hall_id: id },
+        data: { is_active: true },
+      });
+
+      return hallUpdate;
+    });
+
+    return {
+      message: `Hall has been unblocked successfully`,
       hall: this.toBase64(updatedHall),
     };
   }
+}
+
 
   // Delete hall
   async deleteHall(id: number) {

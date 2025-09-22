@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { CreatePeakHourDto } from './dto/create-peak-hour.dto';
 
 const prisma = new PrismaClient();
 
@@ -50,6 +51,31 @@ export class PeakHoursService {
 
     if (!peak)
       throw new NotFoundException(`No peak hour found for hall ID ${hallId} on date ${dateStr}`);
+    return peak;
+  }
+
+  // New create method
+  async create(dto: CreatePeakHourDto) {
+    const peak = await prisma.peak_hours.create({
+      data: {
+        hall_id: dto.hall_id,
+        user_id: dto.user_id,
+        date: new Date(dto.date),
+        reason: dto.reason ?? '',
+        rent: dto.rent,
+      },
+      select: {
+        id: true,
+        hall_id: true,
+        user_id: true,
+        date: true,
+        reason: true,
+        rent: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
     return peak;
   }
 }

@@ -11,6 +11,95 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class UserService {
+  async getAdminsByHall(hallId: number) {
+  const admins = await prisma.admin.findMany({
+    where: {
+      hall_id: Number(hallId),
+      user: { is_active: true }, // Only include admins with active users
+    },
+    include: {
+      user: {
+        select: {
+          user_id: true,
+          hall_id: true,
+          role: true,
+          is_active: true,
+        },
+      },
+    },
+  });
+
+  return admins.map(a => ({
+    user_id: a.user_id,
+    designation: a.designation,
+    name: a.name,
+    phone: a.phone,
+    email: a.email,
+  }));
+}
+  // In UserService
+async deleteAdmin(hallId: number, userId: number) {
+  const user = await prisma.user.findUnique({
+    where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+  });
+
+  if (!user) {
+    throw new NotFoundException(`User with ID ${userId} not found in hall ${hallId}`);
+  }
+
+  // Soft delete by setting is_active to false
+  await prisma.user.update({
+    where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+    data: { is_active: false },
+  });
+
+  return { message: `User ${userId} deactivated successfully` };
+}
+
+  async getUserWithAdmin(hallId: number, userId: number) {
+  const user = await prisma.user.findUnique({
+    where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+    include: {   // use include to fetch relations
+      hall: true,   // fetch full hall object
+      admins: true, // fetch related Admin rows
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundException(
+      `User with ID ${userId} not found for hall ${hallId}`,
+    );
+  }
+
+  // Optional: convert hall.logo to base64
+  let logoBase64: string | null = null;
+  if (user.hall?.logo) {
+    const buf = user.hall.logo instanceof Buffer
+      ? user.hall.logo
+      : Buffer.from(Object.values(user.hall.logo));
+    logoBase64 = buf.toString('base64');
+  }
+
+  return {
+    user_id: user.user_id,
+    hall_id: user.hall_id,
+    role: user.role,
+    is_active: user.is_active,
+    hall: {
+      hall_id: user.hall.hall_id,
+      name: user.hall.name,
+      is_active: user.hall.is_active,
+      logo: logoBase64,
+    },
+    admins: user.admins.map(a => ({
+      designation: a.designation,
+      name: a.name,
+      phone: a.phone,
+      email: a.email,
+    })),
+  };
+}
+
   async addAdmin(dto: CreateUserDto & { designation: string; name?: string; phone?: string; email?: string }) {
   const hall = await prisma.hall.findUnique({ where: { hall_id: dto.hall_id } });
   if (!hall) throw new NotFoundException(`Hall with ID ${dto.hall_id} not found`);
@@ -53,9 +142,6 @@ export class UserService {
   return { message: 'Admin user created successfully', user: newUser, admin: newAdmin };
 }
 
-  // ... your existing methods (findAllByHall, findOneByHall, login, etc.)
-
-  // Fetch all users by hall
   async findAllByHall(hallId: number) {
     const users = await prisma.user.findMany({
       where: { hall_id: hallId },
@@ -73,8 +159,6 @@ export class UserService {
     return users;
   }
 
-  // Fetch single user by hall + user ID
-  // Fetch single user by hall + user ID with hall check
 async findOneByHall(hallId: number, userId: number) {
   const user = await prisma.user.findUnique({
     where: {
@@ -86,12 +170,13 @@ async findOneByHall(hallId: number, userId: number) {
       password: true,
       role: true,
       is_active: true,
-      hall: {   // join hall info
+      hall: {
         select: {
           hall_id: true,
           name: true,
           is_active: true,
-          logo: true, // optional: can convert to base64 if needed
+          logo: true,
+          hallBlocks: { select: { reason: true } }, // fetch block reason
         },
       },
     },
@@ -101,12 +186,22 @@ async findOneByHall(hallId: number, userId: number) {
     throw new NotFoundException(`User with ID ${userId} not found in hall ${hallId}`);
   }
 
-  // Check if hall is active
+  // Determine hall block reason if inactive
+  let hallBlockReason = '';
   if (!user.hall?.is_active) {
-    throw new ForbiddenException(`Hall with ID ${hallId} is inactive.`);
+    hallBlockReason =
+      user.hall.hallBlocks.length > 0
+        ? user.hall.hallBlocks[0].reason
+        : 'Hall is inactive';
   }
 
-  // Optional: convert hall.logo to base64 for API response
+  // Determine user block reason if inactive
+  let userBlockReason = '';
+  if (!user.is_active) {
+    userBlockReason = 'Your user account has been deactivated';
+  }
+
+  // Convert hall.logo to base64 if present
   let logoBase64: string | null = null;
   if (user.hall?.logo) {
     const buf = user.hall.logo instanceof Buffer
@@ -120,21 +215,21 @@ async findOneByHall(hallId: number, userId: number) {
     hall_id: user.hall_id,
     role: user.role,
     is_active: user.is_active,
+    userBlockReason, // frontend can use this to show dialog
     hall: {
       hall_id: user.hall.hall_id,
       name: user.hall.name,
       is_active: user.hall.is_active,
       logo: logoBase64,
+      hallBlockReason, // frontend can use this to show dialog
     },
   };
 }
 
-  
-  // Login method
-  // Login method
+
 async login(hallId: number, userId: number, password: string) {
   try {
-    // Fetch user + hall together
+    // Fetch user and hall status
     const user = await prisma.user.findUnique({
       where: { hall_id_user_id: { hall_id: Number(hallId), user_id: Number(userId) } },
       select: {
@@ -143,17 +238,27 @@ async login(hallId: number, userId: number, password: string) {
         password: true,
         role: true,
         is_active: true,
-        hall: {   // 👈 join hall
-          select: { is_active: true },
+        hall: {
+          select: { 
+            is_active: true,
+            hallBlocks: { select: { reason: true } }, // fetch block info
+          },
         },
       },
     });
 
     if (!user) return { success: false, message: 'User not found' };
 
-    // Check hall status
+    // Check if hall is inactive
     if (!user.hall.is_active) {
-      return { success: false, message: 'Hall is inactive. Contact Owner.' };
+      // Only fetch reason if hall is inactive
+      const blockReason = user.hall.hallBlocks.length > 0
+          ? user.hall.hallBlocks[0].reason
+          : 'Hall is inactive';
+      return {
+        success: false,
+        message: `Hall access denied. Reason: ${blockReason}`,
+      };
     }
 
     // Check user status
@@ -181,7 +286,6 @@ async login(hallId: number, userId: number, password: string) {
   }
 }
 
-  // Create user helper (for seeding)
   async createUser(
     hallId: number,
     userId: number,
@@ -200,7 +304,6 @@ async login(hallId: number, userId: number, password: string) {
     });
   }
 
-  // Change password
   async changePassword(
     hallId: number,
     userId: number,
