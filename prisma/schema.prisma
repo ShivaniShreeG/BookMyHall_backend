@@ -116,7 +116,9 @@ model Bookings {
   phone                 String
   name                  String
   address               String
-  alternate_phone       String?
+  alternate_phone       Json?
+  email                 String?
+  event_type            String?
   status                Status   @default(booked)
   rent                  Float
   advance               Float
@@ -129,7 +131,6 @@ model Bookings {
   billings Billing[]
 
   @@id([hall_id, booking_id])
-  @@unique([hall_id, function_date])
 }
 
 model Cancel {
@@ -189,7 +190,7 @@ model Billing {
   hall_id    Int
   user_id    Int
   booking_id Int
-  reason     String
+  reason     Json
   total      Float
   updated_at DateTime? @updatedAt
 

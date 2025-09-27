@@ -1,8 +1,8 @@
-import { Body,Controller, Get, Post, Param, ParseIntPipe } from '@nestjs/common';
+import { Body,Controller, Get, Post, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { PeakHoursService } from './peak-hours.service';
 import { CreatePeakHourDto } from './dto/create-peak-hour.dto';
 
-@Controller('peak-hour/:hallId/peaks')
+@Controller('peak-hour/:hallId')
 export class PeakHoursController {
   constructor(private readonly peakHoursService: PeakHoursService) {}
 
@@ -24,5 +24,12 @@ create(@Body() dto: CreatePeakHourDto) {
     @Param('date') date: string,
   ) {
     return this.peakHoursService.findByHallAndDate(hallId, date);
+  }
+   @Delete(':id')
+  async deletePeakHour(
+    @Param('hallId', ParseIntPipe) hallId: number,
+    @Param('id', ParseIntPipe) id: number
+  ) {
+    return this.peakHoursService.delete(hallId, id);
   }
 }

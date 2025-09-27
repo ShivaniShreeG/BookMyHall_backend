@@ -37,7 +37,7 @@ export class UserService {
     email: a.email,
   }));
 }
-  // In UserService
+  
 async deleteAdmin(hallId: number, userId: number) {
   const user = await prisma.user.findUnique({
     where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },

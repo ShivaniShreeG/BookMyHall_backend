@@ -1,5 +1,6 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, Body, Post, ParseIntPipe } from '@nestjs/common';
 import { CancelService } from './cancel.service';
+import { CreateCancelDto } from './dto/create.dto';
 
 @Controller('cancels')
 export class CancelController {
@@ -18,5 +19,9 @@ export class CancelController {
     @Param('bookingId', ParseIntPipe) bookingId: number,
   ) {
     return this.cancelService.findOneByBooking(hallId, bookingId);
+  }
+   @Post()
+  cancelBooking(@Body() createCancelDto: CreateCancelDto) {
+    return this.cancelService.cancelBooking(createCancelDto);
   }
 }

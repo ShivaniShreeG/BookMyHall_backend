@@ -1,5 +1,7 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
 import { DefaultValuesService } from './default-values.service';
+import { CreateDefaultValueDto } from './dto/create-default-value.dto';
+import { UpdateDefaultValueDto } from './dto/update-default-value.dto';
 
 @Controller('default-values')
 export class DefaultValuesController {
@@ -10,13 +12,23 @@ export class DefaultValuesController {
   findAllByHall(@Param('hallId', ParseIntPipe) hallId: number) {
     return this.defaultValuesService.findAllByHall(hallId);
   }
-
-  // GET /default-values/:hallId/:userId → default values for a user in a hall
-  @Get(':hallId/:userId')
-  findByHallAndUser(
+  @Post(':hallId')
+  createDefault(
     @Param('hallId', ParseIntPipe) hallId: number,
-    @Param('userId', ParseIntPipe) userId: number,
+    @Body() createDefaultValueDto: CreateDefaultValueDto,
   ) {
-    return this.defaultValuesService.findByHallAndUser(hallId, userId);
+    return this.defaultValuesService.createDefault(hallId, createDefaultValueDto);
+  }
+   @Put(':defaultId')
+  updateDefault(
+    @Param('defaultId', ParseIntPipe) defaultId: number,
+    @Body() updateDefaultValueDto: UpdateDefaultValueDto,
+  ) {
+    return this.defaultValuesService.updateDefault(defaultId, updateDefaultValueDto);
+  }
+
+  @Delete(':defaultId')
+  deleteDefault(@Param('defaultId', ParseIntPipe) defaultId: number) {
+    return this.defaultValuesService.deleteDefault(defaultId);
   }
 }

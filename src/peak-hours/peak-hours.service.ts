@@ -78,4 +78,21 @@ export class PeakHoursService {
 
     return peak;
   }
+   async delete(hallId: number, peakHourId: number) {
+    // Check if the peak hour exists
+    const peak = await prisma.peak_hours.findUnique({
+      where: { id: peakHourId },
+    });
+
+    if (!peak || peak.hall_id !== hallId) {
+      throw new NotFoundException(`Peak hour with ID ${peakHourId} not found for hall ID ${hallId}`);
+    }
+
+    // Delete the peak hour
+    await prisma.peak_hours.delete({
+      where: { id: peakHourId },
+    });
+
+    return { message: `Peak hour ${peakHourId} deleted successfully` };
+  }
 }

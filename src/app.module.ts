@@ -14,6 +14,7 @@ import { ProfileModule } from './profile/profile.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { CalendarModule } from './calendar/calendar.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
     BillingModule,
     ExpenseModule,
     ProfileModule,
-    DashboardModule
+    DashboardModule,
+    CalendarModule
   ],
   controllers:[AppController],
   providers:[AppService],

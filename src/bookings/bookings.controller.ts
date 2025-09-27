@@ -1,17 +1,16 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Post, Body } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
+import { CreateBookingDto } from './dto/create-booking.dto';
 
 @Controller('bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
-  // GET /halls/:hallId/bookings → all bookings for a hall
   @Get(':hallId')
   findAllByHall(@Param('hallId', ParseIntPipe) hallId: number) {
     return this.bookingsService.findAllByHall(hallId);
   }
 
-  // GET /halls/:hallId/bookings/:bookingId → specific booking
   @Get(':hallId/:bookingId')
   findOneByHall(
     @Param('hallId', ParseIntPipe) hallId: number,
@@ -19,16 +18,16 @@ export class BookingsController {
   ) {
     return this.bookingsService.findOneByHall(hallId, bookingId);
   }
-  @Get(':hallId/month/:year/:month')
-findByMonth(
-  @Param('hallId', ParseIntPipe) hallId: number,
-  @Param('year', ParseIntPipe) year: number,
-  @Param('month', ParseIntPipe) month: number,
-) {
-  return this.bookingsService.findByMonth(hallId, month, year);
-}
 
-  // GET /halls/:hallId/bookings/date/:date → booking by function_date
+  @Get(':hallId/month/:year/:month')
+  findByMonth(
+    @Param('hallId', ParseIntPipe) hallId: number,
+    @Param('year', ParseIntPipe) year: number,
+    @Param('month', ParseIntPipe) month: number,
+  ) {
+    return this.bookingsService.findByMonth(hallId, month, year);
+  }
+
   @Get(':hallId/date/:date')
   findByFunctionDate(
     @Param('hallId', ParseIntPipe) hallId: number,
@@ -36,4 +35,18 @@ findByMonth(
   ) {
     return this.bookingsService.findByFunctionDate(hallId, date);
   }
+
+  @Post()
+  create(@Body() dto: CreateBookingDto) {
+    return this.bookingsService.createBooking(dto);
+  }
+  // GET /bookings/:hallId/customer/:phone
+@Get(':hallId/customer/:phone')
+async findCustomerByPhone(
+  @Param('hallId', ParseIntPipe) hallId: number,
+  @Param('phone') phone: string,
+) {
+  return this.bookingsService.findCustomerByPhone(hallId, phone);
+}
+
 }
