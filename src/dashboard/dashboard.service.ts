@@ -101,7 +101,7 @@ async getHallStats(hallId: number) {
     where: { hall_id: hallId },
     _sum: { amount: true },
   });
-  const totalExpenses = (expensesAgg._sum.amount || 0) + totalRefunds;
+  const totalExpenses = (expensesAgg._sum.amount || 0) ;
 
   // Total users
   const totalUsers = await prisma.user.count({ where: { hall_id: hallId } });

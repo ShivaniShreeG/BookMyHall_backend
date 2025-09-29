@@ -140,6 +140,7 @@ model Cancel {
   booking_id    Int
   reason        String
   advance_paid  Float
+  total_paid    Float?
   cancel_charge Float
   refund        Float
   created_at    DateTime @default(now())

@@ -33,65 +33,72 @@ export class CancelService {
   async findOneByBooking(hallId: number, bookingId: number) {
   const booking = await prisma.bookings.findUnique({
     where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
+    include: {
+      billings: true, // fetch all billing records for this booking
+      cancels: true,  // fetch cancel records if exist
+    },
   });
 
   if (!booking) throw new NotFoundException(`Booking not found`);
 
-  const cancel = await prisma.cancel.findUnique({
-    where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
-  });
-
-  return {
-    ...booking,
-    cancel, // could be null if not cancelled yet
-  };
+  return booking;
 }
 
+
   async cancelBooking(createCancelDto: CreateCancelDto) {
-    const { hall_id, booking_id, user_id, reason, cancel_charge } = createCancelDto;
+  const { hall_id, booking_id, user_id, reason, cancel_charge } = createCancelDto;
 
-    const booking = await prisma.bookings.findUnique({
+  // Fetch booking with its billing
+  const booking = await prisma.bookings.findUnique({
+    where: { hall_id_booking_id: { hall_id, booking_id } },
+    include: { billings: true }, // get billing total
+  });
+
+  if (!booking)
+    throw new NotFoundException(`Booking not found for hall ID ${hall_id} and booking ID ${booking_id}`);
+
+  if (booking.status === 'cancelled')
+    throw new BadRequestException('Booking is already cancelled');
+
+  // Use the total from billing if exists, else fallback to advance
+  const totalPaid = booking.billings?.[0]?.total ?? booking.advance;
+
+  // Ensure cancel charge does not exceed total paid
+  const appliedCancelCharge = cancel_charge > totalPaid ? totalPaid : cancel_charge;
+
+  const refund = totalPaid - appliedCancelCharge;
+
+  return await prisma.$transaction(async (tx) => {
+    // 1. Update booking status
+    const updatedBooking = await tx.bookings.update({
       where: { hall_id_booking_id: { hall_id, booking_id } },
+      data: { status: 'cancelled' },
     });
 
-    if (!booking)
-      throw new NotFoundException(`Booking not found for hall ID ${hall_id} and booking ID ${booking_id}`);
-
-    if (booking.status === 'cancelled')
-      throw new BadRequestException('Booking is already cancelled');
-
-    const refund = booking.advance - cancel_charge;
-
-    return await prisma.$transaction(async (tx) => {
-      // 1. Update booking status
-      const updatedBooking = await tx.bookings.update({
-        where: { hall_id_booking_id: { hall_id, booking_id } },
-        data: { status: 'cancelled' },
-      });
-
-      // 2. Create cancel record
-      const cancelRecord = await tx.cancel.create({
-        data: {
-          hall_id,
-          user_id,
-          booking_id,
-          reason,
-          advance_paid: booking.advance,
-          cancel_charge,
-          refund,
-        },
-      });
-
-      // 3. Insert expense
-      await tx.expense.create({
-        data: {
-          hall_id,
-          reason: `Cancelled booking ID ${booking_id}:Cancellation charge`,
-          amount: cancel_charge,
-        },
-      });
-
-      return { updatedBooking, cancelRecord };
+    // 2. Create cancel record
+    const cancelRecord = await tx.cancel.create({
+      data: {
+        hall_id,
+        user_id,
+        booking_id,
+        reason,
+        advance_paid: booking.advance,
+        total_paid: totalPaid,
+        cancel_charge: appliedCancelCharge,
+        refund,
+      },
     });
-  }
+
+    // 3. Insert expense
+    await tx.expense.create({
+      data: {
+        hall_id,
+        reason: `Cancelled booking ID ${booking_id}: Cancellation charge`,
+        amount: appliedCancelCharge,
+      },
+    });
+
+    return { updatedBooking, cancelRecord };
+  });
+}
 }
