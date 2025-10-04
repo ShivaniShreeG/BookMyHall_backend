@@ -27,17 +27,18 @@ model Hall {
   created_at DateTime @default(now())
   is_active  Boolean  @default(true)
 
-  users         User[]
-  admins        Admin[]
-  peakHours     Peak_hours[]
-  bookings      Bookings[]
-  cancels       Cancel[]
-  charges       Charges[]
-  hallBlocks    Hall_block[]
-  defaults      Default_values[]
-  billings      Billing[]
-  expenses      Expense[]
-  administrator Administrator[]
+  users           User[]
+  admins          Admin[]
+  peakHours       Peak_hours[]
+  bookings        Bookings[]
+  cancels         Cancel[]
+  charges         Charges[]
+  hallBlocks      Hall_block[]
+  defaults        Default_values[]
+  billings        Billing[]
+  expenses        Expense[]
+  administrator   Administrator[]
+  HallInstruction HallInstruction[]
 
   @@unique([name, address])
 }
@@ -171,6 +172,18 @@ model Hall_block {
   hall Hall @relation(fields: [hall_id], references: [hall_id])
 
   @@unique([hall_id])
+}
+
+model HallInstruction {
+  id          Int       @id @default(autoincrement())
+  hall_id     Int
+  instruction String
+  created_at  DateTime  @default(now())
+  updated_at  DateTime? @updatedAt
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+
+  @@index([hall_id])
 }
 
 model Default_values {

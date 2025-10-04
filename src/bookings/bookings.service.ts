@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaClient ,Prisma} from '@prisma/client';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { UpdateBookingDto } from './dto/update-booking.dto';
 
 const prisma = new PrismaClient();
 
@@ -174,5 +175,52 @@ async findCustomerByPhone(hallId: number, phone: string) {
     address: booking.address,
   };
 }
+async updateBookingTime(hallId: number, bookingId: number, dto: UpdateBookingDto) {
+    const booking = await prisma.bookings.findUnique({
+      where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
+    });
+
+    if (!booking) {
+      throw new NotFoundException(`Booking ID ${bookingId} not found in hall ${hallId}`);
+    }
+
+    const start = new Date(dto.alloted_datetime_from);
+    const end = new Date(dto.alloted_datetime_to);
+    const functionDate = new Date(dto.function_date);
+
+    if (start >= end) {
+      throw new BadRequestException('Start time must be before end time');
+    }
+
+    // Check overlapping bookings
+    const overlap = await prisma.bookings.findFirst({
+      where: {
+        hall_id: hallId,
+        status: 'booked',
+        booking_id: { not: bookingId }, // exclude current booking
+        function_date: functionDate,
+        AND: [
+          { alloted_datetime_from: { lt: end } },
+          { alloted_datetime_to: { gt: start } },
+        ],
+      },
+    });
+
+    if (overlap) {
+      throw new BadRequestException('The hall is already booked during this time');
+    }
+
+    // Update booking
+    const updatedBooking = await prisma.bookings.update({
+      where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
+      data: {
+        function_date: functionDate,
+        alloted_datetime_from: start,
+        alloted_datetime_to: end,
+      },
+    });
+
+    return updatedBooking;
+  }
 
 }
