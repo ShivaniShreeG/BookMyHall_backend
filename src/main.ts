@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as bodyParser from 'body-parser';
-import { BigIntInterceptor } from './bigint.interceptor';
+// import { BigIntInterceptor } from './bigint.interceptor';
 
 
 async function bootstrap() {
@@ -9,7 +9,7 @@ async function bootstrap() {
   app.enableCors();
   app.use(bodyParser.json({ limit: '10mb' }));
   app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
-  app.useGlobalInterceptors(new BigIntInterceptor());
+  // app.useGlobalInterceptors(new BigIntInterceptor());
   await app.listen(3004);
 }
 bootstrap();
