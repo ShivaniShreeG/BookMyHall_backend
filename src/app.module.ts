@@ -16,6 +16,7 @@ import { AppService } from './app.service';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { HallInstructionModule } from './hall-instruction/hall-instructions.module';
+import { HistoryModule } from './history/history.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { HallInstructionModule } from './hall-instruction/hall-instructions.modu
     ProfileModule,
     DashboardModule,
     CalendarModule,
-    HallInstructionModule
+    HallInstructionModule,
+    HistoryModule
   ],
   controllers:[AppController],
   providers:[AppService],
