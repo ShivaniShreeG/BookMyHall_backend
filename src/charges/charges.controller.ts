@@ -1,6 +1,7 @@
 import { Controller, Get, Param, ParseIntPipe ,Body ,Post} from '@nestjs/common';
 import { ChargesService } from './charges.service';
 import { AddChargesDto } from './dto/add-charges.dto';
+import { AddBalancePaymentDto } from './dto/add-balance-payment.dto'; // 👈 import DTO
 
 @Controller('charges')
 export class ChargesController {
@@ -30,6 +31,24 @@ export class ChargesController {
     const result = await this.chargesService.addCharges(hallId, bookingId, addChargesDto);
     return {
       message: 'Charges added successfully',
+      data: result,
+    };
+  }
+
+  @Post(':hallId/:bookingId/balance-payment')
+  async addBalancePayment(
+    @Param('hallId', ParseIntPipe) hallId: number,
+    @Param('bookingId', ParseIntPipe) bookingId: number,
+    @Body() addBalancePaymentDto: AddBalancePaymentDto,
+  ) {
+    const result = await this.chargesService.addBalancePayment(
+      hallId,
+      bookingId,
+      addBalancePaymentDto,
+    );
+
+    return {
+      message: 'Balance payment added successfully',
       data: result,
     };
   }
