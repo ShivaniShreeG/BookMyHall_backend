@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { CreateExpenseDto } from './dto/expense.dto';
+import { UpdateExpenseDto } from './dto/expense.dto';
 
 const prisma = new PrismaClient();
 
@@ -42,5 +44,56 @@ export class ExpenseService {
         `Expense ID ${expenseId} not found for hall ID ${hallId}`,
       );
     return expense;
+  }
+  async create(dto: CreateExpenseDto) {
+    const expense = await prisma.expense.create({
+      data: {
+        hall_id: dto.hall_id,
+        reason: dto.reason,
+        amount: dto.amount,
+      },
+      select: {
+        id: true,
+        hall_id: true,
+        reason: true,
+        amount: true,
+        created_at: true,
+      },
+    });
+    return expense;
+  }
+
+  // 4️⃣ Update expense
+  async update(expenseId: number, dto: UpdateExpenseDto) {
+    // Check if exists
+    const existing = await prisma.expense.findUnique({ where: { id: expenseId } });
+    if (!existing) throw new NotFoundException(`Expense ID ${expenseId} not found`);
+
+    const updated = await prisma.expense.update({
+      where: { id: expenseId },
+      data: {
+        reason: dto.reason ?? existing.reason,
+        amount: dto.amount ?? existing.amount,
+      },
+      select: {
+        id: true,
+        hall_id: true,
+        reason: true,
+        amount: true,
+        created_at: true,
+      },
+    });
+
+    return updated;
+  }
+
+  // 5️⃣ Delete expense
+  async remove(expenseId: number) {
+    // Check if exists
+    const existing = await prisma.expense.findUnique({ where: { id: expenseId } });
+    if (!existing) throw new NotFoundException(`Expense ID ${expenseId} not found`);
+
+    await prisma.expense.delete({ where: { id: expenseId } });
+    return { message: `Expense ID ${expenseId} deleted successfully` };
   }
 }
