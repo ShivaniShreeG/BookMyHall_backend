@@ -15,6 +15,7 @@ enum Role {
 enum Status {
   booked
   cancelled
+  billed
 }
 
 model Hall {
@@ -44,7 +45,7 @@ model Hall {
 }
 
 model User {
-  user_id   Int
+  user_id   BigInt
   hall_id   Int
   role      Role    @default(admin)
   password  String
@@ -65,7 +66,7 @@ model User {
 model Admin {
   id          Int    @id @default(autoincrement())
   hall_id     Int
-  user_id     Int
+  user_id     BigInt
   name        String
   designation String
   phone       String
@@ -79,7 +80,7 @@ model Admin {
 
 model Administrator {
   id      Int    @id @default(autoincrement())
-  user_id Int
+  user_id BigInt
   hall_id Int
   name    String
   phone   String
@@ -94,7 +95,7 @@ model Administrator {
 model Peak_hours {
   id         Int       @id @default(autoincrement())
   hall_id    Int
-  user_id    Int
+  user_id    BigInt
   date       DateTime
   reason     String
   rent       Float
@@ -110,10 +111,12 @@ model Peak_hours {
 model Bookings {
   booking_id            Int
   hall_id               Int
-  user_id               Int
+  user_id               BigInt
   function_date         DateTime
   alloted_datetime_from DateTime
   alloted_datetime_to   DateTime
+  tamil_date            String?
+  tamil_month           String?
   phone                 String
   name                  String
   address               String
@@ -137,7 +140,7 @@ model Bookings {
 model Cancel {
   id            Int      @id @default(autoincrement())
   hall_id       Int
-  user_id       Int
+  user_id       BigInt
   booking_id    Int
   reason        String
   advance_paid  Float
@@ -189,7 +192,7 @@ model HallInstruction {
 model Default_values {
   id         Int       @id @default(autoincrement())
   hall_id    Int
-  user_id    Int
+  user_id    BigInt
   reason     String
   amount     Float
   created_at DateTime  @default(now()) // automatically set on insert
@@ -202,7 +205,7 @@ model Default_values {
 model Billing {
   id         Int       @id @default(autoincrement())
   hall_id    Int
-  user_id    Int
+  user_id    BigInt
   booking_id Int
   reason     Json
   total      Float
