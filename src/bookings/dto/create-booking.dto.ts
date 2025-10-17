@@ -50,4 +50,12 @@ export class CreateBookingDto {
   @IsString()
   @IsNotEmpty()
   event_type: string; // <-- added event_type
+
+  @IsString()
+  @IsOptional()
+  tamil_date?: string;
+
+  @IsString()
+  @IsOptional()
+  tamil_month?: string;
 }

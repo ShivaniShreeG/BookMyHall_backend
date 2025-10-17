@@ -73,8 +73,8 @@ export class BookingsService {
   return booking;
 }
 
-  
   async createBooking(dto: CreateBookingDto) {
+  console.log('Booking DTO received:', dto);
   const start = new Date(dto.alloted_datetime_from);
   const end = new Date(dto.alloted_datetime_to);
 
@@ -130,6 +130,8 @@ if (overlap)
     advance: dto.advance,
     balance,
     event_type: dto.event_type, // <-- added here
+    tamil_date: dto.tamil_date ?? null,
+    tamil_month: dto.tamil_month ?? null,
   },
 });
 
@@ -217,6 +219,8 @@ async updateBookingTime(hallId: number, bookingId: number, dto: UpdateBookingDto
         function_date: functionDate,
         alloted_datetime_from: start,
         alloted_datetime_to: end,
+        tamil_date: dto.tamil_date ?? undefined,
+        tamil_month: dto.tamil_month ?? undefined,
       },
     });
 
