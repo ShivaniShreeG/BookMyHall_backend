@@ -45,13 +45,12 @@ export class CancelService {
 }
 
 
-  async cancelBooking(createCancelDto: CreateCancelDto) {
+ async cancelBooking(createCancelDto: CreateCancelDto) {
   const { hall_id, booking_id, user_id, reason, cancel_charge } = createCancelDto;
 
-  // Fetch booking with its billing
+  // Fetch booking
   const booking = await prisma.bookings.findUnique({
     where: { hall_id_booking_id: { hall_id, booking_id } },
-    include: { billings: true }, // get billing total
   });
 
   if (!booking)
@@ -60,13 +59,15 @@ export class CancelService {
   if (booking.status === 'cancelled')
     throw new BadRequestException('Booking is already cancelled');
 
-  // Use the total from billing if exists, else fallback to advance
-  const totalPaid = booking.billings?.[0]?.total ?? booking.advance;
+  // Use only advance for cancellation calculation
+  const advancePaid = booking.advance ?? 0;
 
-  // Ensure cancel charge does not exceed total paid
-  const appliedCancelCharge = cancel_charge > totalPaid ? totalPaid : cancel_charge;
+  // Ensure cancel charge does not exceed advance paid
+  const appliedCancelCharge = cancel_charge ;
 
-  const refund = totalPaid - appliedCancelCharge;
+  // Refund = advance paid - cancel charge; if negative, store as 0
+  let refund = advancePaid - appliedCancelCharge;
+  if (refund < 0) refund = 0;
 
   return await prisma.$transaction(async (tx) => {
     // 1. Update booking status
@@ -82,10 +83,10 @@ export class CancelService {
         user_id,
         booking_id,
         reason,
-        advance_paid: booking.advance,
-        total_paid: totalPaid,
+        advance_paid: advancePaid,
+        total_paid: advancePaid, // total paid = advance only
         cancel_charge: appliedCancelCharge,
-        refund,
+        refund, // refund will be >= 0
       },
     });
 
