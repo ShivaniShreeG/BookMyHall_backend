@@ -5,10 +5,13 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class CalendarService {
-  // 📅 1. Full calendar (bookings + peak hours + availability)
+  // 📅 1. Full calendar (bookings + billed + peak hours + availability)
   async getCalendar(hallId: number) {
     const bookings = await prisma.bookings.findMany({
-      where: { hall_id: hallId, status: 'booked' },
+      where: { 
+        hall_id: hallId,
+        status: { in: ['booked', 'billed'] }, // fetch both
+      },
       select: {
         function_date: true,
         alloted_datetime_from: true,
@@ -34,22 +37,32 @@ export class CalendarService {
 
     const calendar: Record<string, any> = {};
 
-    // 🟢 Bookings (highest priority)
+    // 🟢 Booked and billed entries
     bookings.forEach((b) => {
       const dateStr = b.function_date.toISOString().split('T')[0];
-      calendar[dateStr] = calendar[dateStr] || { booked: [], peakHours: [], available: true };
-      calendar[dateStr].booked.push({
-        from: b.alloted_datetime_from,
-        to: b.alloted_datetime_to,
-        status: b.status,
-      });
+      calendar[dateStr] = calendar[dateStr] || { booked: [], billed: [], peakHours: [], available: true };
+
+      if (b.status === 'booked') {
+        calendar[dateStr].booked.push({
+          from: b.alloted_datetime_from,
+          to: b.alloted_datetime_to,
+          status: b.status,
+        });
+      } else if (b.status === 'billed') {
+        calendar[dateStr].billed.push({
+          from: b.alloted_datetime_from,
+          to: b.alloted_datetime_to,
+          status: b.status,
+        });
+      }
+
       calendar[dateStr].available = false;
     });
 
-    // 🟡 Peak hours (if not booked, still mark unavailable)
+    // 🟡 Peak hours
     peakHours.forEach((p) => {
       const dateStr = p.date.toISOString().split('T')[0];
-      calendar[dateStr] = calendar[dateStr] || { booked: [], peakHours: [], available: true };
+      calendar[dateStr] = calendar[dateStr] || { booked: [], billed: [], peakHours: [], available: true };
       calendar[dateStr].peakHours.push({
         rent: p.rent,
         reason: p.reason,
@@ -60,14 +73,18 @@ export class CalendarService {
     return calendar;
   }
 
-  // 📅 2. Booked dates only
+  // 📅 2. Booked + Billed dates only (for calendar highlights)
   async getBookedOnly(hallId: number) {
     const bookings = await prisma.bookings.findMany({
-      where: { hall_id: hallId , status: 'booked' },
+      where: { 
+        hall_id: hallId,
+        status: { in: ['booked', 'billed'] },
+      },
       select: {
         function_date: true,
         alloted_datetime_from: true,
         alloted_datetime_to: true,
+        status: true,
       },
       orderBy: { function_date: 'asc' },
     });
@@ -80,6 +97,7 @@ export class CalendarService {
       date: b.function_date,
       from: b.alloted_datetime_from,
       to: b.alloted_datetime_to,
+      status: b.status,
     }));
   }
 }

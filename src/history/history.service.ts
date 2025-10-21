@@ -9,9 +9,9 @@ export class HistoryService {
   async getBookedHistory(hallId: number) {
     const bookings = await prisma.bookings.findMany({
       where: {
-        hall_id: hallId,
-        status: 'booked',
-      },
+      hall_id: hallId,
+      status: { in: ['booked', 'billed'] }, // include both booked and billed
+    },
       include: {
         billings: true, // include all billing entries as-is
       },
@@ -34,6 +34,8 @@ export class HistoryService {
       email: booking.email,
       address:booking.address,
       event_type: booking.event_type,
+      tamil_date:booking.tamil_date,
+      tamil_month:booking.tamil_month,
       rent: booking.rent,
       advance: booking.advance,
       balance: booking.balance,
@@ -71,6 +73,8 @@ export class HistoryService {
       phone: booking.phone,
       email: booking.email,
       event_type: booking.event_type,
+      tamil_date:booking.tamil_date,
+      tamil_month:booking.tamil_month,
       rent: booking.rent,
       advance: booking.advance,
       balance: booking.balance,
