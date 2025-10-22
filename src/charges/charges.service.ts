@@ -106,6 +106,11 @@ export class ChargesService {
           },
         });
       }
+       // ✅ Update booking status → billed
+      await tx.bookings.update({
+        where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
+        data: { status: 'billed' },
+      });
 
       return { success: true, totalAmount, reasonJson };
     });
