@@ -91,13 +91,15 @@ export class CancelService {
     });
 
     // 3. Insert expense
-    await tx.expense.create({
-      data: {
-        hall_id,
-        reason: `Cancelled booking ID ${booking_id}: Cancellation charge`,
-        amount: appliedCancelCharge,
-      },
-    });
+    if (refund > 0) {
+      await tx.expense.create({
+        data: {
+          hall_id,
+          reason: `Refund for cancelled booking ID ${booking_id}`,
+          amount: refund, // store refund instead of cancel charge
+        },
+      });
+    }
 
     return { updatedBooking, cancelRecord };
   });
