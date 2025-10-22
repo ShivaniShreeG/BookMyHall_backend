@@ -173,17 +173,17 @@ async addBalancePayment(
       });
     }
 
-    // 5️⃣ Update booking balance
-    const updatedBalance = Math.max(booking.balance - amount, 0); // Prevent negative
-    await tx.bookings.update({
-      where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
-      data: { balance: updatedBalance },
-    });
+    // // 5️⃣ Update booking balance
+    // const updatedBalance = Math.max(booking.balance - amount, 0); // Prevent negative
+    // await tx.bookings.update({
+    //   where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
+    //   data: { balance: updatedBalance },
+    // });
 
     return {
       success: true,
       message: `Balance payment of ₹${amount} added successfully.`,
-      remainingBalance: updatedBalance,
+      remainingBalance: booking.balance,
       totalAmount,
       reasonJson,
       newCharge,
