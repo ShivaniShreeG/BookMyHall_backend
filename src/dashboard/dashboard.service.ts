@@ -82,12 +82,18 @@ async getHallStats(hallId: number) {
   // Count cancelled bookings
   const totalCancelled = await prisma.cancel.count({ where: { hall_id: hallId } });
 
-  // Total revenue = sum of all billing.total for the hall
+  // Total revenue = sum of billing.total + sum of bookings.advance for the hall
   const revenueAgg = await prisma.billing.aggregate({
     where: { hall_id: hallId },
     _sum: { total: true },
   });
-  const totalRevenue = revenueAgg._sum.total || 0;
+
+  const advanceAgg = await prisma.bookings.aggregate({
+    where: { hall_id: hallId },
+    _sum: { advance: true },
+  });
+
+  const totalRevenue = (revenueAgg._sum.total || 0) + (advanceAgg._sum.advance || 0);
 
   // Total refunds from cancelled bookings
   const refundAgg = await prisma.cancel.aggregate({
@@ -96,12 +102,12 @@ async getHallStats(hallId: number) {
   });
   const totalRefunds = refundAgg._sum.refund || 0;
 
-  // Total expenses = normal expenses + refunds
+  // Total expenses
   const expensesAgg = await prisma.expense.aggregate({
     where: { hall_id: hallId },
     _sum: { amount: true },
   });
-  const totalExpenses = (expensesAgg._sum.amount || 0) ;
+  const totalExpenses = (expensesAgg._sum.amount || 0);
 
   // Total users
   const totalUsers = await prisma.user.count({ where: { hall_id: hallId } });
@@ -114,9 +120,10 @@ async getHallStats(hallId: number) {
     totalRevenue,
     totalExpenses,
     totalUsers,
-    totalRefunds, // optional: for frontend display
-    netRevenue: totalRevenue - totalRefunds, // optional: revenue after refunds
+    totalRefunds,
+    netRevenue: totalRevenue - totalRefunds,
   };
 }
+
 
 }
