@@ -16,6 +16,7 @@ export class BillingService {
         booking_id: true,
         reason: true,
         total: true,
+        created_at:true,
         updated_at: true,
       },
       orderBy: { updated_at: 'desc' },

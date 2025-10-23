@@ -127,6 +127,7 @@ model Bookings {
   rent                  Float
   advance               Float
   balance               Float
+  created_at DateTime  @default(now())
 
   hall     Hall      @relation(fields: [hall_id], references: [hall_id])
   user     User      @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
@@ -209,6 +210,7 @@ model Billing {
   booking_id Int
   reason     Json
   total      Float
+  created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
 
   hall    Hall     @relation(fields: [hall_id], references: [hall_id])
