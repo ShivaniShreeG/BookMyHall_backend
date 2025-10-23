@@ -135,16 +135,16 @@ if (overlap)
   },
 });
 
-    // Insert billing entry with advance
-    await tx.billing.create({
-      data: {
-        hall_id: dto.hall_id,
-        user_id: dto.user_id,
-        booking_id: newBookingId,
-        reason: { advance: dto.advance }, // stored as JSON
-        total: dto.advance,
-      },
-    });
+    // // Insert billing entry with advance
+    // await tx.billing.create({
+    //   data: {
+    //     hall_id: dto.hall_id,
+    //     user_id: dto.user_id,
+    //     booking_id: newBookingId,
+    //     reason: { advance: dto.advance }, // stored as JSON
+    //     total: dto.advance,
+    //   },
+    // });
 
     return booking;
   });
