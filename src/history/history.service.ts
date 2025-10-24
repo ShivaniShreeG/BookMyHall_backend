@@ -24,6 +24,8 @@ export class HistoryService {
 
     // Return bookings with billing table exactly
     return bookings.map((booking) => ({
+      hall_id: booking.hall_id,
+      user_id: booking.user_id,
       booking_id: booking.booking_id,
       function_date: booking.function_date,
       alloted_from: booking.alloted_datetime_from,
@@ -71,6 +73,8 @@ export class HistoryService {
       alloted_to: booking.alloted_datetime_to,
       customer_name: booking.name,
       phone: booking.phone,
+      address:booking.address,
+      alternate_phone:booking.alternate_phone,
       email: booking.email,
       event_type: booking.event_type,
       tamil_date:booking.tamil_date,
