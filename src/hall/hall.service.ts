@@ -162,24 +162,26 @@ async blockHall(id: number, block: boolean, reason?: string) {
 
   // Delete hall
   async deleteHall(id: number) {
-    const hall = await prisma.hall.findUnique({ where: { hall_id: Number(id) } });
-    if (!hall) throw new NotFoundException(`Hall with ID ${id} not found`);
+  const hall = await prisma.hall.findUnique({ where: { hall_id: Number(id) } });
+  if (!hall) throw new NotFoundException(`Hall with ID ${id} not found`);
 
-    await prisma.$transaction([
-      prisma.cancel.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.charges.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.billing.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.expense.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.hall_block.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.default_values.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.bookings.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.admin.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.administrator.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.peak_hours.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.user.deleteMany({ where: { hall_id: Number(id) } }),
-      prisma.hall.delete({ where: { hall_id: Number(id) } }),
-    ]);
+  await prisma.$transaction([
+    prisma.cancel.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.charges.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.billing.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.expense.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.income.deleteMany({ where: { hall_id: Number(id) } }), // new
+    prisma.hall_block.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.default_values.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.peak_hours.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.bookings.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.admin.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.administrator.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.user.deleteMany({ where: { hall_id: Number(id) } }),
+    prisma.hall.delete({ where: { hall_id: Number(id) } }),
+  ]);
 
-    return { message: 'Hall and all related records deleted successfully' };
-  }
+  return { message: 'Hall and all related records deleted successfully' };
+}
+
 }

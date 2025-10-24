@@ -40,6 +40,7 @@ model Hall {
   expenses        Expense[]
   administrator   Administrator[]
   HallInstruction HallInstruction[]
+  Income          Income[]
 
   @@unique([name, address])
 }
@@ -59,6 +60,7 @@ model User {
   cancels       Cancel[]
   defaults      Default_values[]
   billings      Billing[]
+  Income        Income[]
 
   @@unique([hall_id, user_id])
 }
@@ -127,7 +129,7 @@ model Bookings {
   rent                  Float
   advance               Float
   balance               Float
-  created_at DateTime  @default(now())
+  created_at            DateTime @default(now())
 
   hall     Hall      @relation(fields: [hall_id], references: [hall_id])
   user     User      @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
@@ -226,4 +228,16 @@ model Expense {
   created_at DateTime @default(now())
 
   hall Hall @relation(fields: [hall_id], references: [hall_id])
+}
+
+model Income {
+  id         Int       @id @default(autoincrement())
+  hall_id    Int
+  reason     String
+  amount     Float
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+  user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
 }
