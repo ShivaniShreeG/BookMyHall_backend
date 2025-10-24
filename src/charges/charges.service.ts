@@ -45,77 +45,76 @@ export class ChargesService {
       );
     return charges;
   }
-  async addCharges(
-    hallId: number,
-    bookingId: number,
-    addChargesDto: AddChargesDto,
-  ) {
-    const { userId, charges } = addChargesDto;
+async addCharges(
+  hallId: number,
+  bookingId: number,
+  addChargesDto: AddChargesDto,
+) {
+  const { userId, charges } = addChargesDto;
 
-    // Fetch booking along with existing charges and billing
-    const booking = await prisma.bookings.findUnique({
-      where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
-      include: { billings: true, charges: true },
-    });
+  // Fetch booking along with existing charges and billing
+  const booking = await prisma.bookings.findUnique({
+    where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
+    include: { billings: true, charges: true },
+  });
 
-    if (!booking) throw new NotFoundException('Booking not found');
+  if (!booking) throw new NotFoundException('Booking not found');
 
-    const advanceAmount = booking.advance;
+  return prisma.$transaction(async (tx) => {
+    let newChargesTotal = 0;
 
-    return prisma.$transaction(async (tx) => {
-      let newChargesTotal = 0;
-
-      // Insert new charges
-      for (const charge of charges) {
-        await tx.charges.create({
-          data: {
-            hall_id: hallId,
-            booking_id: bookingId,
-            reason: charge.reason,
-            amount: charge.amount,
-          },
-        });
-        newChargesTotal += charge.amount;
-      }
-
-      // Sum existing charges
-      const existingChargesTotal = booking.charges.reduce((sum, c) => sum + c.amount, 0);
-
-      // Calculate total amount (advance + all charges)
-      const totalAmount = advanceAmount + existingChargesTotal + newChargesTotal;
-
-      // Prepare billing reason JSON
-      const reasonJson: Record<string, number> = { advance: advanceAmount };
-      for (const c of booking.charges) reasonJson[c.reason] = c.amount; // existing charges
-      for (const c of charges) reasonJson[c.reason] = c.amount; // new charges
-
-      // Upsert billing
-      if (booking.billings.length > 0) {
-        await tx.billing.update({
-          where: { id: booking.billings[0].id },
-          data: { reason: reasonJson, total: totalAmount },
-        });
-      } else {
-        await tx.billing.create({
-          data: {
-            hall_id: hallId,
-            user_id: userId,
-            booking_id: bookingId,
-            reason: reasonJson,
-            total: totalAmount,
-          },
-        });
-      }
-       // ✅ Update booking status → billed
-      await tx.bookings.update({
-        where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
-        data: { status: 'billed' },
+    // Insert new charges
+    for (const charge of charges) {
+      await tx.charges.create({
+        data: {
+          hall_id: hallId,
+          booking_id: bookingId,
+          reason: charge.reason,
+          amount: charge.amount,
+        },
       });
+      newChargesTotal += charge.amount;
+    }
 
-      return { success: true, totalAmount, reasonJson };
+    // Sum existing charges
+    const existingChargesTotal = booking.charges.reduce((sum, c) => sum + c.amount, 0);
+
+    // Total amount = only charges (exclude advance)
+    const totalAmount = existingChargesTotal + newChargesTotal;
+
+    // Prepare billing reason JSON (exclude advance)
+    const reasonJson: Record<string, number> = {};
+    for (const c of booking.charges) reasonJson[c.reason] = c.amount;
+    for (const c of charges) reasonJson[c.reason] = c.amount;
+
+    // Upsert billing
+    if (booking.billings.length > 0) {
+      await tx.billing.update({
+        where: { id: booking.billings[0].id },
+        data: { reason: reasonJson, total: totalAmount },
+      });
+    } else {
+      await tx.billing.create({
+        data: {
+          hall_id: hallId,
+          user_id: userId,
+          booking_id: bookingId,
+          reason: reasonJson,
+          total: totalAmount,
+        },
+      });
+    }
+
+    // ✅ Update booking status → billed
+    await tx.bookings.update({
+      where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
+      data: { status: 'billed' },
     });
-  }
-// 3️⃣ Add Balance Payment
+
+    return { success: true, totalAmount, reasonJson };
+  });
+}
+
 async addBalancePayment(
   hallId: number,
   bookingId: number,
@@ -142,13 +141,12 @@ async addBalancePayment(
       },
     });
 
-    // 2️⃣ Calculate new totals
+    // 2️⃣ Calculate new totals (exclude advance)
     const existingChargeTotal = booking.charges.reduce((sum, c) => sum + c.amount, 0);
-    const totalCharges = existingChargeTotal + amount;
-    const totalAmount = booking.advance + totalCharges;
+    const totalAmount = existingChargeTotal + amount;
 
-    // 3️⃣ Prepare updated billing JSON
-    const reasonJson: Record<string, number> = { advance: booking.advance };
+    // 3️⃣ Prepare updated billing JSON (exclude advance)
+    const reasonJson: Record<string, number> = {};
     for (const c of booking.charges) reasonJson[c.reason] = c.amount;
     reasonJson[reason] = amount;
 
@@ -173,22 +171,15 @@ async addBalancePayment(
       });
     }
 
-    // // 5️⃣ Update booking balance
-    // const updatedBalance = Math.max(booking.balance - amount, 0); // Prevent negative
-    // await tx.bookings.update({
-    //   where: { hall_id_booking_id: { hall_id: hallId, booking_id: bookingId } },
-    //   data: { balance: updatedBalance },
-    // });
-
     return {
       success: true,
       message: `Balance payment of ₹${amount} added successfully.`,
-      remainingBalance: booking.balance,
       totalAmount,
       reasonJson,
       newCharge,
     };
   });
 }
+
 
 }
