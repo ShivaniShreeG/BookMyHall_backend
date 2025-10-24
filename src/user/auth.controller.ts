@@ -1,5 +1,5 @@
 import type { Response } from 'express'; 
-import { Controller, Post, Body, Res } from '@nestjs/common';
+import { Controller, Post, Body, Res, BadRequestException } from '@nestjs/common';
 import { UserService } from './user.service';
 
 @Controller('auth')
@@ -64,5 +64,46 @@ async changePassword(@Body() body: any, @Res() res: Response) {
     });
   }
 }
+@Post('send_otp')
+  async sendOtp(@Body() body: { hall_id: number; user_id: number; otp: string }) {
+    const { hall_id, user_id, otp } = body;
+
+    // Input validation
+    if (!hall_id || hall_id <= 0) {
+      throw new BadRequestException({ status: 'error', message: 'Hall ID is required' });
+    }
+    if (!user_id || user_id <= 0) {
+      throw new BadRequestException({ status: 'error', message: 'User ID is required' });
+    }
+    if (!otp) {
+      throw new BadRequestException({ status: 'error', message: 'OTP is required' });
+    }
+
+    // Call service to send OTP
+    return this.userService.sendOtp(hall_id, user_id, otp);
+  }
+
+  // ✅ Update password after OTP verification
+  @Post('update_password')
+  async updatePassword(@Body() body: { hall_id: number; user_id: number; newPassword: string }) {
+    const { hall_id, user_id, newPassword } = body;
+
+    // Input validation
+    if (!hall_id || hall_id <= 0) {
+      throw new BadRequestException({ status: 'error', message: 'Hall ID is required' });
+    }
+    if (!user_id || user_id <= 0) {
+      throw new BadRequestException({ status: 'error', message: 'User ID is required' });
+    }
+    if (!newPassword || newPassword.length < 6) {
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Password must be at least 6 characters long',
+      });
+    }
+
+    // Call service to update password
+    return this.userService.updatePassword(hall_id, user_id, newPassword);
+  }
 
 }

@@ -2,8 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException
 } from '@nestjs/common';
 import { PrismaClient, Role } from '@prisma/client';
+import * as nodemailer from 'nodemailer';
 import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from './dto/create-user.dto';
 
@@ -332,5 +334,63 @@ async login(hallId: number, userId: number, password: string) {
     });
 
     return { message: 'Password updated successfully' };
+  }
+ async sendOtp(hallId: number, userId: number, otp: string) {
+    // Find the user's email from Admin table
+    const admin = await prisma.admin.findUnique({
+      where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+    });
+
+    if (!admin || !admin.email) {
+      throw new NotFoundException({ status: 'error', message: 'User email not found' });
+    }
+
+    // Create Nodemailer transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'Noreply.ramchintech@gmail.com', // Your Gmail
+        pass: 'zkvb rmyu yqtm ipgv',           // Gmail App Password
+      },
+    });
+
+    // Email options
+    const mailOptions = {
+      from: 'Noreply.ramchintech@gmail.com',
+      to: admin.email,
+      subject: 'Your OTP Code',
+      text: `Your OTP code is: ${otp}`,
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      return { status: 'success', message: 'OTP sent successfully' };
+    } catch (error) {
+      console.error('Email send error:', error);
+      throw new BadRequestException({ status: 'error', message: 'Failed to send OTP' });
+    }
+  }
+
+  // ✅ Update Password after OTP verification
+  async updatePassword(hallId: number, userId: number, newPassword: string) {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+    });
+
+    if (!user) {
+      throw new NotFoundException({ status: 'error', message: 'User not found' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update password in DB
+    await prisma.user.update({
+      where: { hall_id_user_id: { hall_id: hallId, user_id: userId } },
+      data: { password: hashedPassword },
+    });
+
+    return { status: 'success', message: 'Password updated successfully' };
   }
 }
