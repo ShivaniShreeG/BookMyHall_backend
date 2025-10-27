@@ -157,5 +157,34 @@ async getUpcomingEvents(hall_id: number) {
   // Step 5: Return in correct order
   return { total, months: monthData };
 }
+async getNextTwelveMonthsBreakdown(hall_id: number) {
+  const now = new Date();
+  const monthsData: Record<string, number> = {};
+
+  for (let i = 0; i < 12; i++) {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0, 23, 59, 59);
+
+    const count = await prisma.peak_hours.count({
+      where: {
+        hall_id,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+
+    const label = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+    monthsData[label] = count;
+  }
+
+  const total = Object.values(monthsData).reduce((a, b) => a + b, 0);
+  return { hall_id, total, months: monthsData };
+}
 
 }

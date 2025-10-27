@@ -20,6 +20,7 @@ import { HistoryModule } from './history/history.module';
 import { IncomeModule } from './income/income.module';
 import { FacilitatorModule } from './facilitator/facility.module';
 import { HomeModule } from './home/home.module';
+import { RegisterModule } from './register/register.module';
 
 @Module({
   imports: [
@@ -41,7 +42,8 @@ import { HomeModule } from './home/home.module';
     HistoryModule,
     IncomeModule,
     FacilitatorModule,
-    HomeModule
+    HomeModule,
+    RegisterModule
   ],
   controllers:[AppController],
   providers:[AppService],

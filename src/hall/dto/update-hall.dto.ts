@@ -4,4 +4,5 @@ export class UpdateHallDto {
   email?: string;
   address?: string;
   logo?: string; // base64 string
+  dueDate?: Date; 
 }

@@ -39,6 +39,10 @@ async getMonthlyBreakdown(
 async getUpcomingEvents(@Param('hall_id', ParseIntPipe) hall_id: number) {
   return this.HomeService.getUpcomingEvents(hall_id);
 }
+@Get('peak-hour/upcoming/:hall_id')
+async getNextTwelveMonthsBreakdown(@Param('hall_id') hall_id: number) {
+  return this.HomeService.getNextTwelveMonthsBreakdown(+hall_id);
+}
 
 
 }

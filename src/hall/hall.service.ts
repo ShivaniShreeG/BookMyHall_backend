@@ -34,6 +34,7 @@ export class HallService {
         email: true,
         address: true,
         logo: true,
+        dueDate:true,
         is_active: true, // include status
       },
     });
@@ -70,6 +71,9 @@ async findOne(id: number) {
   async createHall(createHallDto: CreateHallDto) {
     const { hall_id, name, phone, email, address, logo } = createHallDto;
     const logoBuffer = logo ? Buffer.from(logo, 'base64') : undefined;
+      const now = new Date();
+      const dueDate = new Date(now);
+      dueDate.setMonth(dueDate.getMonth() + 3);
 
     const hall = await prisma.hall.create({
       data: {
@@ -79,6 +83,7 @@ async findOne(id: number) {
         email,
         address,
         logo: logoBuffer,
+        dueDate,
       },
     });
 
@@ -87,7 +92,7 @@ async findOne(id: number) {
 
   // Update hall
   async updateHall(id: number, updateHallDto: UpdateHallDto) {
-    const { name, phone, email, address, logo } = updateHallDto;
+    const { name, phone, email, address, logo ,dueDate} = updateHallDto;
 
     // check if hall exists
     const hall = await prisma.hall.findUnique({ where: { hall_id: id } });
@@ -102,8 +107,10 @@ async findOne(id: number) {
         phone,
         email,
         address,
+        dueDate: dueDate ? new Date(dueDate) : hall.dueDate, // allow dueDate edit
         logo: logoBuffer || hall.logo, // keep existing if no new logo
       },
+      
     });
 
     return this.toBase64(updatedHall);
