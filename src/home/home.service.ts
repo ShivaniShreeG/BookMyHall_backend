@@ -1,0 +1,161 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+@Injectable()
+export class HomeService {
+  // ✅ Count total peak hours for a month
+  async countMonthlyPeakHours(hall_id: number, year: number, month: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    const count = await prisma.peak_hours.count({
+      where: {
+        hall_id,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+
+    return {
+      hall_id,
+      year,
+      month,
+      count,
+      message: `Total ${count} peak hour bookings in ${month}-${year}`,
+    };
+  }
+
+  // ✅ Count total peak hours for a year
+  async countYearlyPeakHours(hall_id: number, year: number) {
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59);
+
+    const count = await prisma.peak_hours.count({
+      where: {
+        hall_id,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+
+    return {
+      hall_id,
+      year,
+      count,
+      message: `Total ${count} peak hour bookings in year ${year}`,
+    };
+  }
+
+  async getMonthlyBreakdown(hall_id: number, year: number) {
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31, 23, 59, 59);
+
+  const records = await prisma.peak_hours.findMany({
+    where: {
+      hall_id,
+      date: { gte: startDate, lte: endDate },
+    },
+    select: { date: true },
+  });
+
+  const monthlyCount = Array(12).fill(0);
+
+  records.forEach(r => {
+    const month = new Date(r.date).getMonth(); // 0–11
+    monthlyCount[month]++;
+  });
+
+  return {
+    hall_id,
+    year,
+    monthlyCount: {
+      JAN: monthlyCount[0],
+      FEB: monthlyCount[1],
+      MAR: monthlyCount[2],
+      APR: monthlyCount[3],
+      MAY: monthlyCount[4],
+      JUN: monthlyCount[5],
+      JUL: monthlyCount[6],
+      AUG: monthlyCount[7],
+      SEP: monthlyCount[8],
+      OCT: monthlyCount[9],
+      NOV: monthlyCount[10],
+      DEC: monthlyCount[11],
+    },
+  };
+}
+
+async countCompletedEventsCurrentYear(hall_id: number) {
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+    const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59);
+    const today = new Date();
+
+    const count = await prisma.bookings.count({
+      where: {
+        hall_id,
+        status: { in: ['booked', 'billed'] },
+        function_date: {
+          gte: startOfYear,
+          lte: endOfYear,
+          lt: today, // already completed
+        },
+      },
+    });
+
+    return { year: new Date().getFullYear(), completed_events: count };
+  }
+
+async getUpcomingEvents(hall_id: number) {
+  const now = new Date();
+  const fourMonthsLater = new Date();
+  fourMonthsLater.setMonth(now.getMonth() + 4);
+
+  // Fetch bookings with status 'booked' or 'billed' between now and next 4 months
+  const upcoming = await prisma.bookings.findMany({
+    where: {
+      hall_id,
+      status: { in: ['booked', 'billed'] },
+      function_date: {
+        gte: now,
+        lte: fourMonthsLater,
+      },
+    },
+    select: { function_date: true },
+  });
+
+  // Step 1: Prepare default 4-month labels (current + next 3)
+  const months: string[] = [];
+  for (let i = 0; i < 4; i++) {
+    const m = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const label = m.toLocaleString('default', { month: 'short', year: 'numeric' }); // e.g., "Nov 2025"
+    months.push(label);
+  }
+
+  // Step 2: Group fetched bookings by month
+  const counts: Record<string, number> = {};
+  upcoming.forEach((b) => {
+    const d = new Date(b.function_date);
+    const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
+    counts[label] = (counts[label] || 0) + 1;
+  });
+
+  // Step 3: Merge with default months (fill 0 if no bookings)
+  const monthData: Record<string, number> = {};
+  months.forEach((m) => {
+    monthData[m] = counts[m] || 0;
+  });
+
+  // Step 4: Total count
+  const total = Object.values(monthData).reduce((sum, c) => sum + c, 0);
+
+  // Step 5: Return in correct order
+  return { total, months: monthData };
+}
+
+}

@@ -12,6 +12,13 @@ enum Role {
   administrator
 }
 
+enum AppPaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUND
+}
+
 enum Status {
   booked
   cancelled
@@ -19,14 +26,15 @@ enum Status {
 }
 
 model Hall {
-  hall_id    Int      @id @default(autoincrement())
+  hall_id    Int       @id @default(autoincrement())
   name       String
   phone      String
   email      String
   address    String
   logo       Bytes?
-  created_at DateTime @default(now())
-  is_active  Boolean  @default(true)
+  created_at DateTime  @default(now())
+  dueDate    DateTime?
+  is_active  Boolean   @default(true)
 
   users           User[]
   admins          Admin[]
@@ -41,6 +49,8 @@ model Hall {
   administrator   Administrator[]
   HallInstruction HallInstruction[]
   Income          Income[]
+  Facilitator     Facilitator[]
+  AppPayment      AppPayment[]
 
   @@unique([name, address])
 }
@@ -108,6 +118,32 @@ model Peak_hours {
   user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
 
   @@unique([hall_id, date])
+}
+
+model AppPayment {
+  id            Int              @id @default(autoincrement())
+  hall_id       Int
+  BaseAmount    Int
+  amount        Float
+  paidAt        DateTime         @default(now())
+  periodStart   DateTime // Billing period start
+  periodEnd     DateTime // Billing period end
+  transactionId String? // Payment gateway transaction ID
+  status        AppPaymentStatus @default(PENDING)
+  createdAt     DateTime         @default(now())
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+}
+
+model Facilitator {
+  id         Int      @id @default(autoincrement())
+  hall_id    Int
+  facility   String
+  name       String
+  phone      String
+  created_at DateTime @default(now())
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
 }
 
 model Bookings {

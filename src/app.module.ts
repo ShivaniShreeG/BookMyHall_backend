@@ -18,6 +18,8 @@ import { CalendarModule } from './calendar/calendar.module';
 import { HallInstructionModule } from './hall-instruction/hall-instructions.module';
 import { HistoryModule } from './history/history.module';
 import { IncomeModule } from './income/income.module';
+import { FacilitatorModule } from './facilitator/facility.module';
+import { HomeModule } from './home/home.module';
 
 @Module({
   imports: [
@@ -37,7 +39,9 @@ import { IncomeModule } from './income/income.module';
     CalendarModule,
     HallInstructionModule,
     HistoryModule,
-    IncomeModule
+    IncomeModule,
+    FacilitatorModule,
+    HomeModule
   ],
   controllers:[AppController],
   providers:[AppService],
