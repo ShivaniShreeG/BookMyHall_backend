@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { HallModule } from './hall/hall.module';
 import { UserModule } from './user/user.module';
 import { AdminModule } from './admin/admin.module';
@@ -21,9 +22,11 @@ import { IncomeModule } from './income/income.module';
 import { FacilitatorModule } from './facilitator/facility.module';
 import { HomeModule } from './home/home.module';
 import { RegisterModule } from './register/register.module';
+import { TwilioModule } from './twillo/twillo.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }), // ✅ loads .env globally
     HallModule,
     UserModule,
     AdminModule,
@@ -43,7 +46,8 @@ import { RegisterModule } from './register/register.module';
     IncomeModule,
     FacilitatorModule,
     HomeModule,
-    RegisterModule
+    RegisterModule,
+    TwilioModule,
   ],
   controllers:[AppController],
   providers:[AppService],

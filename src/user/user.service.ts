@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException
-} from '@nestjs/common';
+import {Injectable, NotFoundException, ForbiddenException, BadRequestException} from '@nestjs/common';
 import { PrismaClient, Role } from '@prisma/client';
 import * as nodemailer from 'nodemailer';
 import * as bcrypt from 'bcryptjs';
