@@ -1,4 +1,11 @@
-import { Controller, Post, Get, Param, ParseIntPipe, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  ParseIntPipe,
+  Body,
+} from '@nestjs/common';
 import { AppPaymentService } from './app-payment.service';
 import { AppPaymentStatus } from '@prisma/client';
 
@@ -21,7 +28,11 @@ export class AppPaymentController {
     @Param('paymentId', ParseIntPipe) paymentId: number,
     @Body() body: { status: AppPaymentStatus; transactionId?: string },
   ) {
-    return this.appPaymentService.updatePaymentStatus(paymentId, body.status, body.transactionId);
+    return this.appPaymentService.updatePaymentStatus(
+      paymentId,
+      body.status,
+      body.transactionId,
+    );
   }
 
   // ✅ Get current/latest payment
@@ -30,13 +41,13 @@ export class AppPaymentController {
     return this.appPaymentService.getCurrentPayment(hallId);
   }
 
-  // ✅ Get all payments
+  // ✅ Get payment history
   @Get('history/:hallId')
   async getPaymentHistory(@Param('hallId', ParseIntPipe) hallId: number) {
     return this.appPaymentService.getPaymentHistory(hallId);
   }
 
-  // ✅ Expire old ones manually
+  // ✅ Expire old payments manually
   @Post('expire')
   async expireOldPayments() {
     return this.appPaymentService.expireOldPayments();
