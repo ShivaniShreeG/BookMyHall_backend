@@ -34,6 +34,10 @@ async getMonthlyBreakdown(
   async getCompletedEvents(@Param('hall_id', ParseIntPipe) hall_id: number) {
     return this.HomeService.countCompletedEventsCurrentYear(hall_id);
   }
+@Get('upcoming/year/:hall_id')
+async getUpcomingEventsForYear(@Param('hall_id', ParseIntPipe) hall_id: number) {
+  return this.HomeService.getUpcomingEventsForYear(hall_id);
+}
 
   @Get('upcoming/:hall_id')
 async getUpcomingEvents(@Param('hall_id', ParseIntPipe) hall_id: number) {

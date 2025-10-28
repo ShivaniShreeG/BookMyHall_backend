@@ -23,6 +23,7 @@ import { FacilitatorModule } from './facilitator/facility.module';
 import { HomeModule } from './home/home.module';
 import { RegisterModule } from './register/register.module';
 import { TwilioModule } from './twillo/twillo.module';
+import { AppPaymentModule } from './app-payment/app-payment.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { TwilioModule } from './twillo/twillo.module';
     HomeModule,
     RegisterModule,
     TwilioModule,
+    AppPaymentModule
   ],
   controllers:[AppController],
   providers:[AppService],

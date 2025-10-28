@@ -186,5 +186,39 @@ async getNextTwelveMonthsBreakdown(hall_id: number) {
   const total = Object.values(monthsData).reduce((a, b) => a + b, 0);
   return { hall_id, total, months: monthsData };
 }
+async getUpcomingEventsForYear(hall_id: number) {
+  const now = new Date();
+  const monthsData: Record<string, number> = {};
+
+  // Loop through the next 12 months (including current)
+  for (let i = 0; i < 12; i++) {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0, 23, 59, 59);
+
+    // Count events for each month
+    const count = await prisma.bookings.count({
+      where: {
+        hall_id,
+        status: { in: ['booked', 'billed'] },
+        function_date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+
+    const label = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+    monthsData[label] = count;
+  }
+
+  // Total of all 12 months
+  const total = Object.values(monthsData).reduce((a, b) => a + b, 0);
+
+  return { total, months: monthsData };
+}
 
 }
