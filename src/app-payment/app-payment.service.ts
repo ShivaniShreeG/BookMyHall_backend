@@ -13,54 +13,62 @@ const GST_RATE = 0.18;
 export class AppPaymentService {
   /**
    * ✅ Create or renew yearly payment
-   * Allows only next year's payment based on the latest completed period.
+   * Allowed 3 days before due date and any time after.
    */
  async createYearlyPayment(hallId: number, transactionId?: string) {
   const hall = await prisma.hall.findUnique({ where: { hall_id: hallId } });
   if (!hall) throw new NotFoundException(`Hall ID ${hallId} not found.`);
 
-  // 🔍 Find latest completed payment
-  const lastCompleted = await prisma.appPayment.findFirst({
-    where: { hall_id: hallId, status: AppPaymentStatus.COMPLETED },
-    orderBy: { periodEnd: 'desc' },
-  });
+  const dueDate = hall.dueDate ? new Date(hall.dueDate) : null;
+  const now = new Date();
 
   let periodStart: Date;
   let periodEnd: Date;
 
-  if (lastCompleted) {
-    // ✅ Always allow paying for next year
-    periodStart = new Date(lastCompleted.periodEnd);
+  // 🔍 Check duplicate active or future payments
+  const duplicate = await prisma.appPayment.findFirst({
+    where: {
+      hall_id: hallId,
+      status: { in: [AppPaymentStatus.PENDING, AppPaymentStatus.COMPLETED] },
+      OR: [
+        { periodStart: { gte: now } },
+        { periodEnd: { gte: now } },
+      ],
+    },
+  });
+
+  if (duplicate) {
+    throw new BadRequestException(
+      `Duplicate payment found for ${duplicate.periodStart.getFullYear()}–${duplicate.periodEnd.getFullYear()}.`,
+    );
+  }
+
+  // 🧾 First-time payment
+  if (!dueDate) {
+    periodStart = new Date();
     periodEnd = new Date(periodStart);
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+  } else {
+    // 🧾 Renewal case → check dueDate from hall
+    const oneMonthBeforeDue = new Date(dueDate);
+    oneMonthBeforeDue.setDate(oneMonthBeforeDue.getDate() - 30);
 
-    // 🧠 Stop duplicates (no double payment for same year)
-    const existingNext = await prisma.appPayment.findFirst({
-      where: {
-        hall_id: hallId,
-        periodStart,
-        periodEnd,
-        status: { in: [AppPaymentStatus.PENDING, AppPaymentStatus.COMPLETED] },
-      },
-    });
-
-    if (existingNext) {
+    if (now < oneMonthBeforeDue) {
       throw new BadRequestException(
-        `Payment for ${periodStart.getFullYear()}–${periodEnd.getFullYear()} already exists.`,
+        `Renewal not allowed yet. You can renew from ${oneMonthBeforeDue.toDateString()} onwards (30 days before due date).`,
       );
     }
-  } else {
-    // 🆕 First-time payment
-    periodStart = hall.dueDate ? new Date(hall.dueDate) : new Date();
+
+    // ✅ Set new payment period
+    periodStart = new Date(dueDate);
     periodEnd = new Date(periodStart);
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   }
 
-  // 💰 Calculate base + GST
+  // 💰 Calculate amount + GST
   const gstAmount = +(BASE_YEARLY_AMOUNT * GST_RATE).toFixed(2);
   const totalAmount = +(BASE_YEARLY_AMOUNT + gstAmount).toFixed(2);
 
-  // 🏦 Create new pending payment
   const payment = await prisma.appPayment.create({
     data: {
       hall_id: hallId,
@@ -121,9 +129,16 @@ export class AppPaymentService {
 
   /**
    * ✅ Get current payment and renewal eligibility
+   * Allowed if within 3 days before due date or after it.
    */
-async getCurrentPayment(hallId: number) {
-  // 🔍 Find the latest PENDING or FAILED payment only
+  async getCurrentPayment(hallId: number) {
+  const hall = await prisma.hall.findUnique({ where: { hall_id: hallId } });
+  if (!hall) throw new NotFoundException(`Hall ID ${hallId} not found.`);
+
+  const dueDate = hall.dueDate ? new Date(hall.dueDate) : null;
+  const now = new Date();
+
+  // 🔍 Active PENDING/FAILED payment first
   const payment = await prisma.appPayment.findFirst({
     where: {
       hall_id: hallId,
@@ -132,59 +147,70 @@ async getCurrentPayment(hallId: number) {
     orderBy: { createdAt: 'desc' },
   });
 
-  if (!payment) {
-    // 🧠 No pending/failed payment exists, return renewal eligibility info
-    const lastCompleted = await prisma.appPayment.findFirst({
-      where: { hall_id: hallId, status: AppPaymentStatus.COMPLETED },
-      orderBy: { periodEnd: 'desc' },
-    });
-
-    if (!lastCompleted) {
-      throw new NotFoundException(`No payments found for hall ID ${hallId}`);
-    }
-
-    const base = BASE_YEARLY_AMOUNT;
+  if (payment) {
+    const base = Number(payment.BaseAmount);
     const gstAmount = +(base * GST_RATE).toFixed(2);
     const totalAmount = +(base + gstAmount).toFixed(2);
-    const now = new Date();
-
-    // ✅ Allow renewal for next year only
-    const nextPeriodStart = new Date(lastCompleted.periodEnd);
-    const nextPeriodEnd = new Date(nextPeriodStart);
-    nextPeriodEnd.setFullYear(nextPeriodEnd.getFullYear() + 1);
-
-    const canRenew = true; // ✅ always allow next year's payment
 
     return {
-      id: null,
-      status: 'NONE',
-      BaseAmount: base,
+      ...payment,
       gstAmount,
       totalAmount,
-      periodStart: nextPeriodStart,
-      periodEnd: nextPeriodEnd,
-      canRenew,
+      canRenew: true,
     };
   }
 
-  // ✅ When found pending/failed payment
-  const base = Number(payment.BaseAmount);
+  // 🧾 No pending payment — calculate next eligibility
+  if (!dueDate) {
+    // First-time payment (no due date yet)
+    const base = BASE_YEARLY_AMOUNT;
+    const gstAmount = +(base * GST_RATE).toFixed(2);
+    const totalAmount = +(base + gstAmount).toFixed(2);
+
+    const start = new Date();
+    const end = new Date(start);
+    end.setFullYear(end.getFullYear() + 1);
+
+    return {
+      id: null,
+      status: 'None',
+      BaseAmount: base,
+      gstAmount,
+      totalAmount,
+      periodStart: start,
+      periodEnd: end,
+      canRenew: true,
+    };
+  }
+
+  // 🧾 Renewal window check based on hall due date
+  const oneMonthBeforeDue = new Date(dueDate);
+  oneMonthBeforeDue.setDate(oneMonthBeforeDue.getDate() - 30);
+  const canRenew = now >= oneMonthBeforeDue; // ✅ within 30 days or after due date
+
+  // Prepare next payment period
+  const nextStart = new Date(dueDate);
+  const nextEnd = new Date(nextStart);
+  nextEnd.setFullYear(nextEnd.getFullYear() + 1);
+
+  const base = BASE_YEARLY_AMOUNT;
   const gstAmount = +(base * GST_RATE).toFixed(2);
   const totalAmount = +(base + gstAmount).toFixed(2);
 
   return {
-    ...payment,
+    id: null,
+    status: 'None',
+    BaseAmount: base,
     gstAmount,
     totalAmount,
-    canRenew: true, // can retry
+    periodStart: nextStart,
+    periodEnd: nextEnd,
+    canRenew,
   };
 }
 
-
-
-
   /**
-   * ✅ Get all past payments
+   * ✅ Get payment history
    */
   async getPaymentHistory(hallId: number) {
     const payments = await prisma.appPayment.findMany({
