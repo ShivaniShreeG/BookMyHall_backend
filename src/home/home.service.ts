@@ -161,12 +161,22 @@ async getNextTwelveMonthsBreakdown(hall_id: number) {
   const now = new Date();
   const monthsData: Record<string, number> = {};
 
+  // Check if today is the last day of the current month
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const skipCurrentMonth = now.getDate() === lastDayOfMonth.getDate();
+
   for (let i = 0; i < 12; i++) {
-    const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const monthOffset = skipCurrentMonth ? i + 1 : i;
+    const monthDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
     const year = monthDate.getFullYear();
     const month = monthDate.getMonth();
 
-    const startDate = new Date(year, month, 1);
+    // For current month (if not skipped), start from 'now'; else from 1st
+    const startDate =
+      i === 0 && !skipCurrentMonth
+        ? now
+        : new Date(year, month, 1);
+
     const endDate = new Date(year, month + 1, 0, 23, 59, 59);
 
     const count = await prisma.peak_hours.count({
@@ -179,24 +189,69 @@ async getNextTwelveMonthsBreakdown(hall_id: number) {
       },
     });
 
-    const label = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+    const label = monthDate.toLocaleString('default', {
+      month: 'short',
+      year: 'numeric',
+    });
+
     monthsData[label] = count;
   }
 
   const total = Object.values(monthsData).reduce((a, b) => a + b, 0);
+
   return { hall_id, total, months: monthsData };
 }
+
+// async getNextTwelveMonthsBreakdown(hall_id: number) {
+//   const now = new Date();
+//   const monthsData: Record<string, number> = {};
+
+//   for (let i = 0; i < 12; i++) {
+//     const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+//     const year = monthDate.getFullYear();
+//     const month = monthDate.getMonth();
+
+//     const startDate = new Date(year, month, 1);
+//     const endDate = new Date(year, month + 1, 0, 23, 59, 59);
+
+//     const count = await prisma.peak_hours.count({
+//       where: {
+//         hall_id,
+//         date: {
+//           gte: startDate,
+//           lte: endDate,
+//         },
+//       },
+//     });
+
+//     const label = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+//     monthsData[label] = count;
+//   }
+
+//   const total = Object.values(monthsData).reduce((a, b) => a + b, 0);
+//   return { hall_id, total, months: monthsData };
+// }
 async getUpcomingEventsForYear(hall_id: number) {
   const now = new Date();
   const monthsData: Record<string, number> = {};
 
-  // Loop through the next 12 months (including current)
+  // Determine if we should skip the current month
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const skipCurrentMonth = now.getDate() === lastDayOfMonth.getDate();
+
+  // Loop through the next 12 months (including current unless skipped)
   for (let i = 0; i < 12; i++) {
-    const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const monthOffset = skipCurrentMonth ? i + 1 : i;
+    const monthDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
     const year = monthDate.getFullYear();
     const month = monthDate.getMonth();
 
-    const startDate = new Date(year, month, 1);
+    // For the *first included* month, start from today if it's the current month
+    const startDate =
+      i === 0 && !skipCurrentMonth
+        ? now
+        : new Date(year, month, 1);
+
     const endDate = new Date(year, month + 1, 0, 23, 59, 59);
 
     // Count events for each month
@@ -211,14 +266,53 @@ async getUpcomingEventsForYear(hall_id: number) {
       },
     });
 
-    const label = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+    const label = monthDate.toLocaleString('default', {
+      month: 'short',
+      year: 'numeric',
+    });
+
     monthsData[label] = count;
   }
 
-  // Total of all 12 months
+  // Total of all included months
   const total = Object.values(monthsData).reduce((a, b) => a + b, 0);
 
   return { total, months: monthsData };
 }
+
+// async getUpcomingEventsForYear(hall_id: number) {
+//   const now = new Date();
+//   const monthsData: Record<string, number> = {};
+
+//   // Loop through the next 12 months (including current)
+//   for (let i = 0; i < 12; i++) {
+//     const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+//     const year = monthDate.getFullYear();
+//     const month = monthDate.getMonth();
+
+//     const startDate = new Date(year, month, 1);
+//     const endDate = new Date(year, month + 1, 0, 23, 59, 59);
+
+//     // Count events for each month
+//     const count = await prisma.bookings.count({
+//       where: {
+//         hall_id,
+//         status: { in: ['booked', 'billed'] },
+//         function_date: {
+//           gte: startDate,
+//           lte: endDate,
+//         },
+//       },
+//     });
+
+//     const label = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+//     monthsData[label] = count;
+//   }
+
+//   // Total of all 12 months
+//   const total = Object.values(monthsData).reduce((a, b) => a + b, 0);
+
+//   return { total, months: monthsData };
+// }
 
 }
