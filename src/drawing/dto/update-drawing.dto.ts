@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsNotEmpty} from 'class-validator';
 
 export class UpdateDrawingDto {
   @IsString()
@@ -8,4 +8,8 @@ export class UpdateDrawingDto {
   @IsNumber()
   @IsOptional()
   amount?: number;
+
+  @IsString()
+  @IsNotEmpty()
+  type: string;
 }

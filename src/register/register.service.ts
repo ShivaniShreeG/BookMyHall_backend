@@ -2,11 +2,20 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { CreateHallOwnerDto } from './dto/create-hall.dto';
 import * as bcrypt from 'bcryptjs';
+import * as nodemailer from 'nodemailer';
 
 const prisma = new PrismaClient();
 
+interface OtpRecord {
+  otp: string;
+  expiresAt: number;
+}
+
 @Injectable()
 export class RegisterService {
+
+  private otpStore = new Map<string, OtpRecord>(); // email → OTP mapping
+
   async createHallWithOwner(dto: CreateHallOwnerDto) {
     const {
       hall_name,
@@ -85,5 +94,44 @@ export class RegisterService {
   async findHallById(hall_id: number) {
   return prisma.hall.findUnique({ where: { hall_id } });
 }
+async sendOtp(email: string, otp: string) {
+    // Save OTP temporarily for 5 minutes
+    this.otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'Noreply.ramchintech@gmail.com',
+        pass: 'zkvb rmyu yqtm ipgv', // Gmail app password
+      },
+    });
+
+    const mailOptions = {
+      from: 'Noreply.ramchintech@gmail.com',
+      to: email,
+      subject: 'Your Email Verification Code',
+      text: `Your OTP code is: ${otp}\n\nThis code will expire in 5 minutes.`,
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      return { status: 'success', message: 'OTP sent successfully' };
+    } catch (error) {
+      console.error('Email send error:', error);
+      throw new BadRequestException({ status: 'error', message: 'Failed to send OTP email' });
+    }
+  }
+
+  async verifyOtp(email: string, otp: string): Promise<boolean> {
+    const record = this.otpStore.get(email);
+    if (!record) return false;
+    if (record.otp !== otp) return false;
+    if (Date.now() > record.expiresAt) {
+      this.otpStore.delete(email);
+      return false;
+    }
+    this.otpStore.delete(email); // cleanup
+    return true;
+  }
 
 }

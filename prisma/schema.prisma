@@ -52,6 +52,7 @@ model Hall {
   Facilitator     Facilitator[]
   AppPayment      AppPayment[]
   Drawing         Drawing[]
+
   @@unique([name, address])
 }
 
@@ -267,12 +268,13 @@ model Expense {
   hall Hall @relation(fields: [hall_id], references: [hall_id])
 }
 
-model Drawing{
+model Drawing {
   id         Int       @id @default(autoincrement())
   hall_id    Int
   user_id    Int // <-- missing in your version
   reason     String
   amount     Float
+  type       String?
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
 

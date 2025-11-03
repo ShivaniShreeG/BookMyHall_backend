@@ -92,24 +92,28 @@ export class HomeService {
 }
 
 async countCompletedEventsCurrentYear(hall_id: number) {
-    const startOfYear = new Date(new Date().getFullYear(), 0, 1);
-    const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59);
-    const today = new Date();
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
 
-    const count = await prisma.bookings.count({
-      where: {
-        hall_id,
-        status: { in: ['booked', 'billed'] },
-        function_date: {
-          gte: startOfYear,
-          lte: endOfYear,
-          lt: today, // already completed
-        },
+  // Start of today (00:00:00)
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const count = await prisma.bookings.count({
+    where: {
+      hall_id,
+      status: { in: ['booked', 'billed'] },
+      function_date: {
+        gte: startOfYear,
+        lt: startOfToday, // strictly before today
+        lte: endOfYear,
       },
-    });
+    },
+  });
 
-    return { year: new Date().getFullYear(), completed_events: count };
-  }
+  return { year: now.getFullYear(), completed_events: count };
+}
+
 
 async getUpcomingEvents(hall_id: number) {
   const now = new Date();
@@ -235,26 +239,20 @@ async getUpcomingEventsForYear(hall_id: number) {
   const now = new Date();
   const monthsData: Record<string, number> = {};
 
-  // Determine if we should skip the current month
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const skipCurrentMonth = now.getDate() === lastDayOfMonth.getDate();
-
-  // Loop through the next 12 months (including current unless skipped)
+  // Loop through the next 12 months (always including current month)
   for (let i = 0; i < 12; i++) {
-    const monthOffset = skipCurrentMonth ? i + 1 : i;
-    const monthDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+    const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
     const year = monthDate.getFullYear();
     const month = monthDate.getMonth();
 
-    // For the *first included* month, start from today if it's the current month
+    // For the *first month*, start from today
     const startDate =
-      i === 0 && !skipCurrentMonth
-        ? now
+      i === 0
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
         : new Date(year, month, 1);
 
     const endDate = new Date(year, month + 1, 0, 23, 59, 59);
 
-    // Count events for each month
     const count = await prisma.bookings.count({
       where: {
         hall_id,
@@ -274,11 +272,11 @@ async getUpcomingEventsForYear(hall_id: number) {
     monthsData[label] = count;
   }
 
-  // Total of all included months
   const total = Object.values(monthsData).reduce((a, b) => a + b, 0);
 
   return { total, months: monthsData };
 }
+
 
 // async getUpcomingEventsForYear(hall_id: number) {
 //   const now = new Date();

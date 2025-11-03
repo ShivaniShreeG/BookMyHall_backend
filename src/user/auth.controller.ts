@@ -82,7 +82,6 @@ async changePassword(@Body() body: any, @Res() res: Response) {
     // Call service to send OTP
     return this.userService.sendOtp(hall_id, user_id, otp);
   }
-
   // ✅ Update password after OTP verification
   @Post('update_password')
   async updatePassword(@Body() body: { hall_id: number; user_id: number; newPassword: string }) {

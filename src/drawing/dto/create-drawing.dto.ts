@@ -4,6 +4,10 @@ export class CreateDrawingDto {
   @IsInt()
   hall_id: number;
 
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+
   @IsInt()
   user_id: number;
 
