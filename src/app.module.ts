@@ -24,6 +24,7 @@ import { HomeModule } from './home/home.module';
 import { RegisterModule } from './register/register.module';
 import { TwilioModule } from './twillo/twillo.module';
 import { AppPaymentModule } from './app-payment/app-payment.module';
+import { DrawingModule } from './drawing/drawing.module';
 
 @Module({
   imports: [
@@ -49,7 +50,8 @@ import { AppPaymentModule } from './app-payment/app-payment.module';
     HomeModule,
     RegisterModule,
     TwilioModule,
-    AppPaymentModule
+    AppPaymentModule,
+    DrawingModule
   ],
   controllers:[AppController],
   providers:[AppService],

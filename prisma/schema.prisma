@@ -51,7 +51,7 @@ model Hall {
   Income          Income[]
   Facilitator     Facilitator[]
   AppPayment      AppPayment[]
-
+  Drawing         Drawing[]
   @@unique([name, address])
 }
 
@@ -71,6 +71,7 @@ model User {
   defaults      Default_values[]
   billings      Billing[]
   Income        Income[]
+  Drawing       Drawing[]
 
   @@unique([hall_id, user_id])
 }
@@ -264,6 +265,19 @@ model Expense {
   created_at DateTime @default(now())
 
   hall Hall @relation(fields: [hall_id], references: [hall_id])
+}
+
+model Drawing{
+  id         Int       @id @default(autoincrement())
+  hall_id    Int
+  user_id    Int // <-- missing in your version
+  reason     String
+  amount     Float
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+  user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
 }
 
 model Income {
