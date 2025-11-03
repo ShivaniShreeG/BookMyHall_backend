@@ -43,6 +43,10 @@ async getUpcomingEventsForYear(@Param('hall_id', ParseIntPipe) hall_id: number) 
 async getUpcomingEvents(@Param('hall_id', ParseIntPipe) hall_id: number) {
   return this.HomeService.getUpcomingEvents(hall_id);
 }
+@Get('current-balance/:hall_id')
+async getHallCurrentBalance(@Param('hall_id', ParseIntPipe) hall_id: number) {
+  return this.HomeService.getHallCurrentBalance(hall_id);
+}
 @Get('peak-hour/upcoming/:hall_id')
 async getNextTwelveMonthsBreakdown(@Param('hall_id') hall_id: number) {
   return this.HomeService.getNextTwelveMonthsBreakdown(+hall_id);

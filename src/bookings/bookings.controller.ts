@@ -11,6 +11,10 @@ export class BookingsController {
   findAllByHall(@Param('hallId', ParseIntPipe) hallId: number) {
     return this.bookingsService.findAllByHall(hallId);
   }
+   @Get('all/:hallId')
+  findAll(@Param('hallId', ParseIntPipe) hallId: number) {
+    return this.bookingsService.findAll(hallId);
+  }
 
   @Get(':hallId/:bookingId')
   findOneByHall(

@@ -18,6 +18,17 @@ export class BookingsService {
       throw new NotFoundException(`No bookings found for hall ID ${hallId}`);
     return bookings;
   }
+  async findAll(hallId: number) {
+    const bookings = await prisma.bookings.findMany({
+      where: { hall_id: hallId},
+      orderBy: { function_date: 'asc' },
+    });
+
+    if (!bookings.length)
+      throw new NotFoundException(`No bookings found for hall ID ${hallId}`);
+    return bookings;
+  }
+
 
   // Fetch a specific booking by hall + booking_id
   async findOneByHall(hallId: number, bookingId: number) {

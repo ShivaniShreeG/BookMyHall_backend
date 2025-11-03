@@ -277,7 +277,67 @@ async getUpcomingEventsForYear(hall_id: number) {
   return { total, months: monthsData };
 }
 
+async  getHallCurrentBalance(hallId: number) {
+  try {
+    // --- 1️⃣ Fetch all relevant totals ---
+    const [incomes, expenses, billings, bookings, drawings] = await Promise.all([
+      prisma.income.aggregate({
+        _sum: { amount: true },
+        where: { hall_id: hallId },
+      }),
+      prisma.expense.aggregate({
+        _sum: { amount: true },
+        where: { hall_id: hallId },
+      }),
+      prisma.billing.aggregate({
+        _sum: { total: true },
+        where: { hall_id: hallId },
+      }),
+      prisma.bookings.aggregate({
+        _sum: { advance: true },
+        where: { hall_id: hallId },
+      }),
+      prisma.drawing.findMany({
+        where: { hall_id: hallId },
+        select: { amount: true, type: true },
+      }),
+    ]);
 
+    // --- 2️⃣ Separate Drawing In / Out ---
+    let drawingIn = 0;
+    let drawingOut = 0;
+    drawings.forEach((d) => {
+      if (d.type?.toLowerCase() === "in") drawingIn += d.amount;
+      else if (d.type?.toLowerCase() === "out") drawingOut += d.amount;
+    });
+
+    // --- 3️⃣ Compute final balance ---
+    const totalIncome = incomes._sum.amount || 0;
+    const totalExpense = expenses._sum.amount || 0;
+    const totalBilling = billings._sum.total || 0;
+    const totalAdvance = bookings._sum.advance || 0;
+
+    const balance =
+      totalIncome + totalBilling + totalAdvance + drawingIn - totalExpense - drawingOut;
+
+    // --- 4️⃣ Return structured result ---
+    return {
+      hallId,
+      totalIncome,
+      totalExpense,
+      totalBilling,
+      totalAdvance,
+      drawingIn,
+      drawingOut,
+      currentBalance: balance,
+    };
+  } catch (error) {
+    console.error("❌ Error calculating hall balance:", error);
+    throw new Error("Failed to calculate hall balance");
+  } finally {
+    await prisma.$disconnect();
+  }
+}
 // async getUpcomingEventsForYear(hall_id: number) {
 //   const now = new Date();
 //   const monthsData: Record<string, number> = {};
