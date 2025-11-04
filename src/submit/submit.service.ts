@@ -11,6 +11,11 @@ export class SubmitTicketService {
   async create(dto: CreateSubmitTicketDto) {
     return prisma.submitTicket.create({ data: dto });
   }
+async findAll() {
+  return this.prisma.submitTicket.findMany({
+    orderBy: { created_at: 'desc' }, // optional: newest first
+  });
+}
 
   // Get all tickets for a hall
   async findAllByHall(hall_id: number) {

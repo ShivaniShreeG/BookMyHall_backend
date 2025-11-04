@@ -16,6 +16,11 @@ export class SubmitTicketController {
   findAllByHall(@Param('hall_id') hall_id: string) {
     return this.service.findAllByHall(Number(hall_id));
   }
+  
+  @Get('all')
+  findAll() {
+    return this.service.findAll(); // must be implemented in service
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
