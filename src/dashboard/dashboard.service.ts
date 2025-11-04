@@ -92,8 +92,11 @@ async getHallStats(hallId: number) {
     where: { hall_id: hallId },
     _sum: { advance: true },
   });
-
-  const totalRevenue = (revenueAgg._sum.total || 0) + (advanceAgg._sum.advance || 0);
+const incomeAgg = await prisma.income.aggregate({
+    where: { hall_id: hallId },
+    _sum: { amount: true },
+  });
+  const totalRevenue = (revenueAgg._sum.total || 0) + (advanceAgg._sum.advance || 0)+(incomeAgg._sum.amount || 0);
 
   // Total refunds from cancelled bookings
   const refundAgg = await prisma.cancel.aggregate({
