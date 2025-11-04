@@ -25,6 +25,8 @@ import { RegisterModule } from './register/register.module';
 import { TwilioModule } from './twillo/twillo.module';
 import { AppPaymentModule } from './app-payment/app-payment.module';
 import { DrawingModule } from './drawing/drawing.module';
+import { MessageModule } from './message/message.module';
+import { SubmitTicketModule } from './submit/submit.module';
 
 @Module({
   imports: [
@@ -51,7 +53,9 @@ import { DrawingModule } from './drawing/drawing.module';
     RegisterModule,
     TwilioModule,
     AppPaymentModule,
-    DrawingModule
+    DrawingModule,
+    MessageModule,
+    SubmitTicketModule
   ],
   controllers:[AppController],
   providers:[AppService],

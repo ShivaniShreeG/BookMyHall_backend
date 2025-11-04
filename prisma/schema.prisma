@@ -52,6 +52,8 @@ model Hall {
   Facilitator     Facilitator[]
   AppPayment      AppPayment[]
   Drawing         Drawing[]
+  SubmitTicket    SubmitTicket[]
+  Message         Message[]
 
   @@unique([name, address])
 }
@@ -73,6 +75,7 @@ model User {
   billings      Billing[]
   Income        Income[]
   Drawing       Drawing[]
+  SubmitTicket  SubmitTicket[]
 
   @@unique([hall_id, user_id])
 }
@@ -293,4 +296,24 @@ model Income {
 
   hall Hall @relation(fields: [hall_id], references: [hall_id])
   user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+}
+
+model SubmitTicket {
+  id         Int      @id @default(autoincrement())
+  hall_id    Int
+  user_id    Int
+  issue      String
+  created_at DateTime @default(now())
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
+  user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  hall_id    Int
+  message    String
+  created_at DateTime @default(now())
+
+  hall Hall @relation(fields: [hall_id], references: [hall_id])
 }
