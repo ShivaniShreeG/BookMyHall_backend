@@ -12,7 +12,7 @@ export class SubmitTicketService {
     return prisma.submitTicket.create({ data: dto });
   }
 async findAll() {
-  return this.prisma.submitTicket.findMany({
+  return prisma.submitTicket.findMany({
     orderBy: { created_at: 'desc' }, // optional: newest first
   });
 }
