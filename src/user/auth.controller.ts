@@ -38,12 +38,21 @@ async login(@Body() body: any, @Res() res: Response) {
 async changePassword(@Body() body: any, @Res() res: Response) {
   const { hallId, userId, oldPassword, newPassword } = body;
 
-  if (!hallId || !userId || !oldPassword || !newPassword) {
-    return res.status(400).json({
-      success: false,
-      message: 'hallId, userId, oldPassword, and newPassword are required',
-    });
-  }
+ if (!userId) { 
+      return res.status(400).json({ 
+        success: false, message: 'userId is required'
+       }); 
+    }
+     if (!oldPassword) {
+       return res.status(400).json({ 
+        success: false, message: 'oldPassword is required' 
+      });
+    } 
+    if (!newPassword) { 
+      return res.status(400).json({ 
+        success: false, message: 'newPassword is required' 
+      });
+    }
 
   try {
     const result = await this.userService.changePassword(
