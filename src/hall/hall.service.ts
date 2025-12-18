@@ -73,7 +73,7 @@ async findOne(id: number) {
     const logoBuffer = logo ? Buffer.from(logo, 'base64') : undefined;
       const now = new Date();
       const dueDate = new Date(now);
-      dueDate.setMonth(dueDate.getMonth() + 3);
+      dueDate.setMonth(dueDate.getMonth() + 2);
 
     const hall = await prisma.hall.create({
       data: {

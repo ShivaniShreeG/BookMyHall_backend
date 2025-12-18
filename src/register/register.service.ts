@@ -46,7 +46,7 @@ export class RegisterService {
     return prisma.$transaction(async (tx) => {
         const now = new Date();
       const dueDate = new Date(now);
-      dueDate.setMonth(dueDate.getMonth() + 3);
+      dueDate.setMonth(dueDate.getMonth() + 2);
       // Create Hall
       const hall = await tx.hall.create({
         data: {
