@@ -1,11 +1,46 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { CreatePeakHourDto } from './dto/create-peak-hour.dto';
+import { CreatePeakHourAllDto } from './dto/create-peak-hour-all.dto';
 
 const prisma = new PrismaClient();
 
 @Injectable()
 export class PeakHoursService {
+
+async createForAllHallsMultipleDates(dto: CreatePeakHourAllDto) {
+  const halls = await prisma.hall.findMany({
+    where: { is_active: true },
+    select: { hall_id: true },
+  });
+
+  if (!halls.length) {
+    throw new NotFoundException('No active halls found');
+  }
+
+  const data: Prisma.Peak_hoursCreateManyInput[] = [];
+
+  for (const dateStr of dto.dates) {
+    const date = new Date(dateStr);
+    date.setHours(0, 0, 0, 0);
+
+    for (const hall of halls) {
+      data.push({
+        hall_id: hall.hall_id,
+        user_id: dto.user_id,
+        date,
+        reason: dto.reason ?? '',
+        rent: dto.rent,
+      });
+    }
+  }
+
+  return prisma.peak_hours.createMany({
+    data,
+    skipDuplicates: true,
+  });
+}
+
 
   async findAllByHall(hallId: number) {
     const peaks = await prisma.peak_hours.findMany({

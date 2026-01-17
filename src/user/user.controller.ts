@@ -6,6 +6,14 @@ import { CreateUserDto } from './dto/create-user.dto';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+     @Get(':hallId/check-user/:userId')
+checkUserAvailability(
+  @Param('hallId', ParseIntPipe) hallId: number,
+  @Param('userId', ParseIntPipe) userId: number,
+) {
+  return this.userService.checkUserAvailability(hallId, userId);
+}
+
   @Get(':hallId')
   findAllByHall(@Param('hallId', ParseIntPipe) hallId: number) {
     return this.userService.findAllByHall(hallId);

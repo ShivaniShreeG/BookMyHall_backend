@@ -1,11 +1,17 @@
 import { Body,Controller, Get, Post, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { PeakHoursService } from './peak-hours.service';
 import { CreatePeakHourDto } from './dto/create-peak-hour.dto';
+import { CreatePeakHourAllDto } from './dto/create-peak-hour-all.dto';
 
 @Controller('peak-hour/:hallId')
 export class PeakHoursController {
   constructor(private readonly peakHoursService: PeakHoursService) {}
 
+   @Post('all-halls')
+  createForAllHalls(@Body() dto: CreatePeakHourAllDto) {
+    return this.peakHoursService.createForAllHallsMultipleDates(dto);
+  }
+  
   // GET /halls/:hallId/peaks → all peak hours for a hall
   @Get()
   findAllByHall(@Param('hallId', ParseIntPipe) hallId: number) {

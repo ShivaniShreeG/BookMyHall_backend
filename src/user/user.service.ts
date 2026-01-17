@@ -8,6 +8,20 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class UserService {
+
+     async checkUserAvailability(hallId: number, userId: number) {
+    const exists = await prisma.user.findUnique({
+  where: {
+    hall_id_user_id: {
+      hall_id: Number(hallId),
+      user_id: Number(userId),
+    },
+  },
+});
+
+    return { available: !exists };
+  }
+
   async getAdminsByHall(hallId: number) {
   const admins = await prisma.admin.findMany({
     where: {

@@ -112,15 +112,15 @@ model Administrator {
 model Peak_hours {
   id         Int       @id @default(autoincrement())
   hall_id    Int
-  user_id    Int
+  user_id    Int?
   date       DateTime
   reason     String
-  rent       Float
+  rent       Float?
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
 
   hall Hall @relation(fields: [hall_id], references: [hall_id])
-  user User @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
+  user User? @relation(fields: [hall_id, user_id], references: [hall_id, user_id])
 
   @@unique([hall_id, date])
 }

@@ -1,0 +1,17 @@
+import { IsArray, IsDateString, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+
+export class CreatePeakHourAllDto {
+  @IsArray()
+  @IsDateString({}, { each: true })
+  dates: string[];
+
+  @IsInt()
+  user_id: number;
+
+  @IsNumber()
+  rent: number;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
