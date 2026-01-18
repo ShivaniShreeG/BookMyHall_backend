@@ -1,12 +1,44 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient,Prisma } from '@prisma/client';
 import { CreateHallDto } from './dto/create-hall.dto';
 import { UpdateHallDto } from './dto/update-hall.dto'; // we'll create this DTO
+import { CreatePeakHourAllDto } from './dto/create-peak-hour-all.dto';
 
 const prisma = new PrismaClient();
 
 @Injectable()
 export class HallService {
+
+  async createForAllHallsMultipleDates(dto: CreatePeakHourAllDto) {
+  const halls = await prisma.hall.findMany({
+    select: { hall_id: true }, // ✅ no is_active filter
+  });
+
+  if (!halls.length) {
+    throw new NotFoundException('No halls found');
+  }
+
+  const data: Prisma.Peak_hoursCreateManyInput[] = [];
+
+  for (const dateStr of dto.dates) {
+    const date = new Date(dateStr);
+    date.setHours(0, 0, 0, 0);
+
+    for (const hall of halls) {
+      data.push({
+        hall_id: hall.hall_id,
+        date,
+        reason: dto.reason ?? 'Muhurtham',
+        rent: dto.rent ?? 0,
+      });
+    }
+  }
+
+  return prisma.peak_hours.createMany({
+    data,
+    skipDuplicates: true, // avoids duplicate (hall_id + date)
+  });
+}
 
   // Convert hall logo buffer to base64
   private toBase64(hall: any) {
@@ -86,7 +118,36 @@ async findOne(id: number) {
         dueDate,
       },
     });
+    
+ const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
+  const futurePeakHours = await prisma.peak_hours.findMany({
+    where: {
+      date: {
+        gte: today,
+      },
+    },
+    distinct: ['date'], // VERY IMPORTANT
+    select: {
+      date: true,
+      reason: true,
+      rent: true,
+    },
+  });
+
+  // 4️⃣ Copy peak hours to NEW hall
+  if (futurePeakHours.length > 0) {
+    await prisma.peak_hours.createMany({
+      data: futurePeakHours.map(p => ({
+        hall_id: hall.hall_id,
+        date: p.date,
+        reason: p.reason,
+        rent: p.rent,
+      })),
+      skipDuplicates: true,
+    });
+  }
     return this.toBase64(hall);
   }
 

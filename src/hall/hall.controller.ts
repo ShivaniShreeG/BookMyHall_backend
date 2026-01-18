@@ -3,10 +3,16 @@ import { HallService } from './hall.service';
 import { CreateHallDto } from './dto/create-hall.dto';
 import { UpdateHallDto } from './dto/update-hall.dto';
 import { BlockHallDto } from './dto/block-hall.dto';
+import { CreatePeakHourAllDto } from './dto/create-peak-hour-all.dto';
 
 @Controller('halls')
 export class HallController {
   constructor(private readonly hallService: HallService) {}
+
+  @Post('all-halls')
+  createForAllHalls(@Body() dto: CreatePeakHourAllDto) {
+    return this.hallService.createForAllHallsMultipleDates(dto);
+  }
 
   // Get all halls
   @Get()

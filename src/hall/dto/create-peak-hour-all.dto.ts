@@ -5,9 +5,6 @@ export class CreatePeakHourAllDto {
   @IsDateString({}, { each: true })
   dates: string[];
 
-  @IsInt()
-  user_id: number;
-
   @IsNumber()
   rent: number;
 

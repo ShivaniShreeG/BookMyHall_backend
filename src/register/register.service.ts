@@ -83,6 +83,35 @@ export class RegisterService {
         },
       });
 
+       const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const futurePeakHours = await prisma.peak_hours.findMany({
+    where: {
+      date: {
+        gte: today,
+      },
+    },
+    distinct: ['date'], // VERY IMPORTANT
+    select: {
+      date: true,
+      reason: true,
+      rent: true,
+    },
+  });
+
+  // 4️⃣ Copy peak hours to NEW hall
+  if (futurePeakHours.length > 0) {
+    await prisma.peak_hours.createMany({
+      data: futurePeakHours.map(p => ({
+        hall_id: hall.hall_id,
+        date: p.date,
+        reason: p.reason,
+        rent: p.rent,
+      })),
+      skipDuplicates: true,
+    });
+  } 
       return {
         message: 'Hall and Owner created successfully',
         hall,
@@ -91,9 +120,11 @@ export class RegisterService {
       };
     });
   }
+
   async findHallById(hall_id: number) {
   return prisma.hall.findUnique({ where: { hall_id } });
 }
+
 async sendOtp(email: string, otp: string) {
     // Save OTP temporarily for 5 minutes
     this.otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
